@@ -1,0 +1,12 @@
+  METHOD m_consultar_contab_erros.
+
+    r_return = abap_true.
+
+    IF i_teste IS INITIAL.
+      o_dao_movto->m_set_model( m_get_model( ) ).
+    ENDIF.
+    o_dao_movto->m_select_mov_contab_erros( ).
+
+    r_return = abap_false.
+
+  ENDMETHOD.
