@@ -1,0 +1,11 @@
+  METHOD m_submit_range.
+
+    it_nrfatura = VALUE #( FOR ls_nrfatura IN me->it_ztbfi0004
+                         ( sign = if_fsbp_const_range=>sign_include
+                           option = if_fsbp_const_range=>option_equal
+                           low =  ls_nrfatura-nrfatura ) ).
+
+    SORT it_nrfatura BY low.
+    DELETE ADJACENT DUPLICATES FROM it_nrfatura COMPARING low.
+
+  ENDMETHOD.
