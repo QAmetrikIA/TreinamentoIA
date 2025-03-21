@@ -1,0 +1,43 @@
+  METHOD m_cria_novo_job.
+
+    DATA: vl_time TYPE t.
+    DATA: vl_jobname  TYPE btcjob VALUE 'ZPFIR_JOBS_FATURAMENTO'.
+
+    DATA(itl_tvarv) = o_dao_job_fat->m_busca_parametros( ).
+
+    READ TABLE itl_tvarv INTO DATA(wl_tvarv_tempo) WITH KEY name = 'ZFI_JOB_FAT_TEMPO' BINARY SEARCH.
+    IF wl_tvarv_tempo-low IS NOT INITIAL.
+      READ TABLE itl_tvarv INTO DATA(wl_tvarv_tent) WITH KEY name = 'ZFI_JOB_FAT_TENTATIVAS' BINARY SEARCH.
+      IF wl_tvarv_tent-low IS NOT INITIAL.
+
+        DATA(itl_tbtcp) =  o_dao_job_fat->m_busca_dados_jobs( i_slset ).
+
+
+        IF lines( itl_tbtcp ) < wl_tvarv_tent-low.
+          vl_time+1(1) = wl_tvarv_tempo-low.
+          o_dao_job_fat->m_add_time( EXPORTING i_uzeit = sy-uzeit
+                                               i_datum = sy-datum
+                                               i_time  = vl_time
+                                     IMPORTING e_time  = vl_time ).
+
+          READ TABLE itl_tbtcp INTO DATA(wl_tbtcp) INDEX 1.
+          IF sy-subrc EQ 0.
+            vl_jobname = wl_tbtcp-jobname.
+          ENDIF.
+
+          o_dao_job_fat->m_job_open_lock( EXPORTING i_jobname = vl_jobname
+                                          IMPORTING e_jobcount = DATA(vl_jobcount) ).
+
+          o_dao_job_fat->m_job_submit_lock( EXPORTING i_jobname  = vl_jobname
+                                                      i_jobcount = vl_jobcount
+                                                      i_slset    = i_slset ).
+
+          o_dao_job_fat->m_job_close_lock( EXPORTING i_jobname  = vl_jobname
+                                                     i_jobcount = vl_jobcount
+                                                     i_time     = vl_time ).
+
+        ENDIF.
+      ENDIF.
+    ENDIF.
+
+  ENDMETHOD.
