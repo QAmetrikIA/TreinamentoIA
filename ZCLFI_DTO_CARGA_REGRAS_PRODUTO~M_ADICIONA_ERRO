@@ -1,0 +1,12 @@
+  METHOD m_adiciona_erro.
+
+    DATA: wl_erro  TYPE zstfi_mensagens.
+
+    DATA: vl_linha TYPE sytabix.
+
+    vl_linha = i_linha + 1.
+
+    wl_erro-mensagem = 'Linha'(001) && | | && vl_linha && ':' && | | && i_mensagem.
+    APPEND wl_erro TO it_erros.
+
+  ENDMETHOD.
