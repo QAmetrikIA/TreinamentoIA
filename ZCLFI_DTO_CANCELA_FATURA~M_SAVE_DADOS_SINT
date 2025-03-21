@@ -1,0 +1,10 @@
+  METHOD m_save_dados_sint.
+    DATA: wl_dados TYPE zstfi_dados_compl_sint.
+
+    wl_dados-nrfatura      = i_fatura.
+    wl_dados-id_instrucao  = i_instrucao.
+    wl_dados-id_integracao = i_integracao.
+    wl_dados-guid_fatura   = i_guid.
+
+    APPEND wl_dados TO o_dao_cancela_fatura->it_compl_sint.
+  ENDMETHOD.
