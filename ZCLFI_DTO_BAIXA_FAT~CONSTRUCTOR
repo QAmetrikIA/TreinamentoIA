@@ -1,0 +1,7 @@
+  METHOD constructor.
+    IF i_dao_baixa_fat IS NOT INITIAL.
+      o_dao_baixa_fat = i_dao_baixa_fat.
+    ELSE.
+      CREATE OBJECT o_dao_baixa_fat TYPE zclfi_dao_baixa_fat.
+    ENDIF.
+  ENDMETHOD.
