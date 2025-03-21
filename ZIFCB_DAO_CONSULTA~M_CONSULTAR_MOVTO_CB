@@ -1,0 +1,7 @@
+METHOD zifcb_dao_consulta~m_consultar_movto_cb.
+    CHECK i_cb_codigo IS NOT INITIAL.
+
+    o_dao_movto->m_set_cod_cashback( i_cb_codigo ).
+    r_return = o_dao_movto->m_select_ztcb_movimento_single( ).
+
+  ENDMETHOD. 
