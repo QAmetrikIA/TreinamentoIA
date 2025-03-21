@@ -1,0 +1,105 @@
+  METHOD m_refaturar.
+    DATA: ol_fatura   TYPE REF TO zclfi_cria_fatura.
+
+    DATA: vl_dias TYPE t5a4a-dlydy.
+    DATA: itl_analit_new TYPE zttfi_fatura_anal.
+    DATA: itl_analit_aux TYPE zttfi_fatura_anal.
+    DATA: itl_sintet_new TYPE zttfi_fatura_sint.
+    DATA: vl_juros TYPE zdefi_juros,
+          vl_multa TYPE zdefi_multa.
+
+    IF o_dao_refaturamento->it_zfit0046 IS NOT INITIAL.
+      MOVE-CORRESPONDING o_dao_refaturamento->it_zfit0046 TO o_dao_refaturamento->it_fatura_sintet.
+    ENDIF.
+    IF o_dao_refaturamento->it_zfit0038 IS NOT INITIAL.
+
+      DATA(itl_bsid) = o_dao_refaturamento->m_get_bsid( ).
+      MOVE-CORRESPONDING o_dao_refaturamento->it_zfit0038 TO o_dao_refaturamento->it_fatura_analit.
+
+      LOOP AT o_dao_refaturamento->it_fatura_analit ASSIGNING FIELD-SYMBOL(<fsl_analit_comp>).
+        DATA(vl_index) = sy-tabix.
+        READ TABLE itl_bsid WITH KEY belnr = <fsl_analit_comp>-belnr TRANSPORTING NO FIELDS.
+        IF sy-subrc <> 0.
+          DELETE o_dao_refaturamento->it_fatura_analit INDEX vl_index.
+        ENDIF.
+      ENDLOOP.
+
+    ENDIF.
+
+    "excluir os registros que foram cancelados da tabela analítica e compensados
+    LOOP AT o_dao_refaturamento->it_fatura_analit ASSIGNING FIELD-SYMBOL(<fsl_analit_aux>).
+      DATA(vl_tabix) = sy-tabix.
+      READ TABLE o_dao_refaturamento->it_ztbfi0014 ASSIGNING FIELD-SYMBOL(<fsl_0014>) WITH KEY bukrs = <fsl_analit_aux>-bukrs
+                                                                                               belnr = <fsl_analit_aux>-belnr
+                                                                                               nrfatura = <fsl_analit_aux>-nrfatura BINARY SEARCH.
+      IF  sy-subrc EQ 0.
+        DELETE o_dao_refaturamento->it_fatura_analit INDEX vl_tabix.
+      ENDIF.
+    ENDLOOP.
+
+    "montagem dos dados das novas faturas
+    LOOP AT o_dao_refaturamento->it_fatura_sintet ASSIGNING FIELD-SYMBOL(<fsl_sintet>).
+
+      DATA(wl_sintet_new) = <fsl_sintet>.
+
+      IF sy-datum > wl_sintet_new-dt_vencto.
+        vl_juros =  VALUE #( o_dao_refaturamento->it_ztbfi0013[ ramo = <fsl_sintet>-prctr ]-juros OPTIONAL ) .
+        vl_multa =  VALUE #( o_dao_refaturamento->it_ztbfi0013[ ramo = <fsl_sintet>-prctr ]-multa OPTIONAL ) .
+      ENDIF.
+
+      "criar novo campo na tabela sintética para armazenar a fatura referência, juros e multa
+      wl_sintet_new-juros = vl_juros.
+      wl_sintet_new-multa = vl_multa.
+      wl_sintet_new-fat_ref = <fsl_sintet>-nrfatura.
+
+      CLEAR: wl_sintet_new-nrfatura,       wl_sintet_new-status,       wl_sintet_new-criado_por,    wl_sintet_new-criado_em,   wl_sintet_new-criado_hora,
+             wl_sintet_new-status_email,   wl_sintet_new-des_cancel,   wl_sintet_new-cancelado_por, wl_sintet_new-cancelado_em,
+             wl_sintet_new-cancelado_hora, wl_sintet_new-id_instrucao, wl_sintet_new-id_integracao, wl_sintet_new-guid_fatura, wl_sintet_new-iof,
+             wl_sintet_new-dmbtr.
+
+      IF wl_sintet_new-dt_vencto < sy-datum.
+        vl_dias = VALUE #( o_dao_refaturamento->it_ztbfi0013[ ramo = wl_sintet_new-prctr ]-dias_carencia OPTIONAL ) .
+        CALL FUNCTION 'RP_CALC_DATE_IN_INTERVAL'
+          EXPORTING
+            date      = sy-datum
+            days      = vl_dias
+            months    = '00'
+            years     = '00'
+          IMPORTING
+            calc_date = wl_sintet_new-dt_vencto.
+      ENDIF.
+
+      "atribui a uma tabela temporária apenas os documentos daquela fatura
+      itl_analit_aux = VALUE #( FOR <fsl_analit> IN o_dao_refaturamento->it_fatura_analit  WHERE ( nrfatura  = <fsl_sintet>-nrfatura  )
+                                                                                                 ( <fsl_analit> ) ).
+
+      "Recalcular o valor da fatura nova(sem os documentos cancelados)
+      LOOP AT itl_analit_aux ASSIGNING FIELD-SYMBOL(<fsl_analit_new>).
+        CLEAR: <fsl_analit_new>-nrfatura, <fsl_analit_new>-status.
+
+        wl_sintet_new-dmbtr += <fsl_analit_new>-dmbtr.
+        wl_sintet_new-iof += <fsl_analit_new>-iof.
+
+        APPEND <fsl_analit_new> TO itl_analit_new.
+      ENDLOOP.
+
+      vl_juros = wl_sintet_new-dmbtr * ( vl_juros / 100 ).
+      vl_multa = ( wl_sintet_new-dmbtr + vl_juros ) * ( vl_multa / 100 ).
+      wl_sintet_new-dmbtr = wl_sintet_new-dmbtr + vl_juros + vl_multa.
+
+
+      APPEND wl_sintet_new TO itl_sintet_new.
+      CLEAR itl_analit_aux.
+      CLEAR wl_sintet_new.
+      CLEAR: vl_juros, vl_multa.
+    ENDLOOP.
+
+    "Chamar a rotina que gera nova fatura
+    CREATE OBJECT ol_fatura.
+    ol_fatura->m_set_fatura_sint( itl_sintet_new ).
+    ol_fatura->m_set_fatura_anal( itl_analit_new ).
+    ol_fatura->m_executar( ).
+    DATA(itl_fatura_log) = ol_fatura->m_get_log( ).
+    APPEND LINES OF itl_fatura_log TO o_dao_refaturamento->it_log.
+
+  ENDMETHOD.
