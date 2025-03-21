@@ -1,0 +1,6 @@
+  METHOD m_executar.
+
+    o_dao_consulta_fatura->m_formata_parametros( ).
+    o_dao_consulta_fatura->m_seleciona_dados( ).
+
+  ENDMETHOD.
