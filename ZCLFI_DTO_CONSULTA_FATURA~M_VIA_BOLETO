@@ -1,0 +1,25 @@
+  METHOD m_via_boleto.
+
+    DATA: ol_dti_zfi034 TYPE REF TO zclfi_dti_zfi034.
+    CREATE OBJECT ol_dti_zfi034.
+    DATA vl_answer TYPE string.
+
+
+    READ TABLE i_fatura_sint INTO DATA(wl_zfit0046_venc) INDEX 1.
+    IF sy-datum = wl_zfit0046_venc-dt_vencto.
+      o_dao_consulta_fatura->m_popup_confirm( IMPORTING e_answer = vl_answer ).
+
+      IF vl_answer = 1.
+        ol_dti_zfi034->m_set_fatura_anal( i_fatura_analit ).
+        ol_dti_zfi034->m_set_fatura_sint( i_fatura_sint ).
+        ol_dti_zfi034->m_segunda_via( ).
+      ENDIF.
+    ELSEIF wl_zfit0046_venc-dt_vencto < sy-datum.
+      MESSAGE 'Não é possível imprimir 2ª via de boleto vencido' TYPE 'S' DISPLAY LIKE 'E'.
+    ELSE.
+      ol_dti_zfi034->m_set_fatura_anal( i_fatura_analit ).
+      ol_dti_zfi034->m_set_fatura_sint( i_fatura_sint ).
+      ol_dti_zfi034->m_segunda_via( ).
+
+    ENDIF.
+  ENDMETHOD.
