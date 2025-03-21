@@ -1,0 +1,69 @@
+  METHOD m_monta_dados_baixa.
+
+    DATA(ol_fi_contas_baixas) = NEW zcl_fi_contas_baixas( ).
+
+    READ TABLE  o_dao_baixa_fat->it_zfit0038 INTO w_zfit0038 INDEX 1.
+
+    w_fi002_return-_data-_event           = '4'.  "4 - Baixa de contas a receber
+    w_fi002_return-_data-_key            =  |{ i_nrfatura }-{ w_fi002_return-_data-_event }|.
+    READ TABLE o_dao_baixa_fat->it_zfit0001 INTO DATA(wl_0001) INDEX 1.
+    w_fi002_return-_data-_id_transaction  = wl_0001-id_integracao.   " ID da Integracao que gerou o registro no SAP
+    w_fi002_return-_data-_return_date     = |{ sy-datum(4) }-{ sy-datum+4(2) }-{ sy-datum+6(2) }T{ sy-uzeit TIME = ENVIRONMENT }|. " Data retorno
+    w_fi002_return-_data-_id_registry     = i_guid_fatura.       " ID do registro Original
+    w_fi002_return-_request_id            = i_guid_fatura.
+    w_fi002_return-_data-_original_value  = i_dmbtr.
+    w_fi002_return-_data-_paid_value      = i_dmbtr.
+    w_fi002_return-_data-_paid_date = |{ i_bkpf-budat(4) }-{ i_bkpf-budat+4(2) }-{ i_bkpf-budat+6(2) }T{ i_bkpf-cputm TIME = ENVIRONMENT }|.
+    w_fi002_return-_data-_note = |{ i_bkpf-belnr }-{ i_bkpf-bukrs }-{ i_bkpf-gjahr }|.
+    w_fi002_return-_data-_note = |{ w_fi002_return-_data-_note } { w_fi002_return-_data-_key }|.
+    SHIFT w_fi002_return-_data-_note LEFT DELETING LEADING '0'.
+    SHIFT w_fi002_return-_data-_note LEFT DELETING LEADING space.
+    w_fi002_return-_data-_payment_form = '8'. "(Fatura SAP)
+    w_fi002_return-_data-_document_payment_form = i_nrfatura.
+    w_fi002_return-_data-_document_type  = '4'.                           " Tipo de Documento/Processo - 4-Fatura
+    w_fi002_return-_data-_installment = '1'.
+    w_fi002_return-_data-_iof = i_iof.
+
+    LOOP AT o_dao_baixa_fat->it_bseg_aux ASSIGNING FIELD-SYMBOL(<fsl_bseg>).
+      "// JUROS
+      IF <fsl_bseg>-hkont IN ol_fi_contas_baixas->get_account_read( i_blart      = <fsl_bseg>-blart
+                                                                    i_tipo_conta = 'JUROS' ).
+        ADD <fsl_bseg>-wrbtr TO w_fi002_return-_data-_interest.
+        CONDENSE w_fi002_return-_data-_interest NO-GAPS.
+
+        "// DESCONTO
+      ELSEIF <fsl_bseg>-hkont IN ol_fi_contas_baixas->get_account_read( i_blart      = <fsl_bseg>-blart
+                                                                        i_tipo_conta = 'DESCONTO' ).
+
+        ADD <fsl_bseg>-wrbtr TO w_fi002_return-_data-_discount.
+        CONDENSE w_fi002_return-_data-_discount NO-GAPS.
+        "// ADICIONAL
+      ELSEIF <fsl_bseg>-hkont IN ol_fi_contas_baixas->get_account_read( i_blart      = <fsl_bseg>-blart
+                                                                        i_tipo_conta = 'ADICIONAL' ).
+        ADD <fsl_bseg>-wrbtr TO w_fi002_return-_data-_increase.
+        CONDENSE w_fi002_return-_data-_increase NO-GAPS.
+      ENDIF.
+    ENDLOOP.
+
+
+    w_fi002_return-_data-_paid_value          = ( w_fi002_return-_data-_paid_value - w_fi002_return-_data-_discount ).
+    IF w_fi002_return-_data-_paid_value < 0.
+      e_erro = abap_true.
+      EXIT.
+    ENDIF.
+
+    SORT o_dao_baixa_fat->it_bank BY hbkid.
+    READ TABLE o_dao_baixa_fat->it_bank INTO DATA(wl_bank) WITH KEY hbkid = i_hbkid BINARY SEARCH.
+
+    IF sy-subrc IS INITIAL.
+      w_fi002_bank-_agency  = wl_bank-bnklz+3.                       "Agencia
+      w_fi002_bank-_account = wl_bank-bankn && '-' && wl_bank-bkont. "Conta
+      w_fi002_bank-_number  = wl_bank-bankl(3).                      "Codigo do Banco
+      w_fi002_bank-_type    = '2'.
+    ENDIF.
+
+    APPEND w_fi002_bank   TO w_fi002_return-_data-_bank.
+    APPEND w_fi002_return TO it_fi002_return.
+    CLEAR: w_fi002_return.
+
+  ENDMETHOD.
