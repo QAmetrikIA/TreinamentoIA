@@ -1,0 +1,13 @@
+  METHOD m_salva_dados_anal.
+
+    CHECK it_zfit0038 IS NOT INITIAL.
+
+    MODIFY zfit0038 FROM TABLE it_zfit0038.
+
+    IF sy-subrc IS NOT INITIAL.
+      w_log-mensagem = 'Erro na criação da tabela ZFIT0038'.
+      APPEND w_log TO it_log.
+      v_erro = 'X'.
+    ENDIF.
+
+  ENDMETHOD.
