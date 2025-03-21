@@ -1,0 +1,3 @@
+  method M_SET_ALV.
+    o_dao->v_alv = i_alv.
+  endmethod.
