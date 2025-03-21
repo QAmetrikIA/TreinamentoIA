@@ -1,0 +1,5 @@
+  method M_SET_TABLE_IDSAP.
+
+    o_envia_legado->m_set_table_id_sap( i_table ).
+
+  endmethod.
