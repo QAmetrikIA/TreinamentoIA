@@ -1,0 +1,3 @@
+  method M_ATUALIZAR_DADOS_SINT.
+    o_dao_cancela_fatura->m_atualizar_dados_sint( ).
+  endmethod.
