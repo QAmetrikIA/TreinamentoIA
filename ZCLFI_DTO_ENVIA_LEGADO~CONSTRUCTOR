@@ -1,0 +1,9 @@
+  METHOD constructor.
+
+    IF i_dao IS INITIAL.
+      CREATE OBJECT o_envia_legado TYPE zclfi_dao_envia_legado.
+    ELSE.
+      o_envia_legado = i_dao.
+    ENDIF.
+
+  ENDMETHOD.
