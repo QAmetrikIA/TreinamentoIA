@@ -1,0 +1,5 @@
+  METHOD m_set_usinc.
+
+    o_dao->w_ztbint005-usinc = i_usinc.
+
+  ENDMETHOD.
