@@ -1,0 +1,14 @@
+METHOD zifcb_dao_consulta~m_eliminar_ztcb_bloq_simult.
+
+    CHECK i_bloq_sim IS NOT INITIAL.
+
+    DELETE ztcb_bloq_simult FROM i_bloq_sim.
+
+    CHECK sy-subrc IS INITIAL.
+    CALL FUNCTION 'BAPI_TRANSACTION_COMMIT'
+      EXPORTING
+        wait = 'X'.
+
+    r_validacao = abap_true.
+
+  ENDMETHOD.
