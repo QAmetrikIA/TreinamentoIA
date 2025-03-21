@@ -1,0 +1,3 @@
+  method M_SET_SEND.
+    o_dao->v_send = i_send.
+  endmethod.
