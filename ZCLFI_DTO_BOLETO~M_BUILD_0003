@@ -1,0 +1,16 @@
+  METHOD m_build_0003.
+
+    CHECK o_dao->w_zfit0046 IS NOT INITIAL.
+
+    w_003-mandt = sy-mandt.
+    w_003-pagador = o_dao->w_zfit0046-pagador.
+    w_003-bukrs = o_dao->w_zfit0046-bukrs.
+    w_003-prctr = o_dao->w_zfit0046-prctr .
+    w_003-nrfatura = o_dao->w_zfit0046-nrfatura.
+    w_003-otf = v_otf.
+    w_003-dt_change = sy-datum.
+    w_003-hr_change = sy-uzeit.
+
+    APPEND w_003 TO r_003.
+
+  ENDMETHOD.
