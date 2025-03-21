@@ -1,0 +1,6 @@
+  METHOD m_seleciona_dados.
+
+    o_dao_job_fat->m_buscar_zfit0045( ).
+    o_dao_job_fat->m_buscar_tvarv( ).
+
+  ENDMETHOD.
