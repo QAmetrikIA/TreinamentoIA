@@ -1,0 +1,7 @@
+METHOD zifcb_dao_consulta~m_consultar_saldo.
+
+    m_select_bsid( ).
+
+    r_retorno = abap_true.
+
+  ENDMETHOD.
