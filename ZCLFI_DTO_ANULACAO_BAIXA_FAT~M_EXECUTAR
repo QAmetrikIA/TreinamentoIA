@@ -1,0 +1,51 @@
+  METHOD m_executar.
+
+    DATA: vl_linhas TYPE numc5.
+    DATA: vl_guid_fatura TYPE zfit0046-guid_fatura.
+    DATA: vl_dmbtr TYPE zfit0046-dmbtr.
+    DATA: vl_iof   TYPE zfit0046-iof.
+
+    READ TABLE o_dao_anulacao_baixa_fat->it_xragl INTO DATA(wl_xragl) WITH KEY buzei = '1'.
+    IF sy-subrc EQ 0.
+      DATA(vl_erro) =  o_dao_anulacao_baixa_fat->m_seleciona_dados_validacao( EXPORTING i_xragl = wl_xragl
+                                                                              IMPORTING e_linhas = vl_linhas ).
+      CHECK vl_erro IS INITIAL.
+
+      READ TABLE  o_dao_anulacao_baixa_fat->it_zfit0038 INTO DATA(wl_0038) INDEX 1.
+      IF sy-subrc EQ 0.
+        CLEAR: wl_0038-augbl, wl_0038-augdt.
+        o_dao_anulacao_baixa_fat->m_modifica_zfit0038( i_augbl = wl_0038-augbl
+                                                       i_augdt = wl_0038-augdt
+                                                       i_belnr = wl_0038-belnr
+                                                       i_fatura = wl_0038-nrfatura ).
+      ENDIF.
+      "se encontrou dados para este documento e ele é o último a ser estornado da fatura, envia a baixa ao legado
+      IF vl_linhas = 1.
+        o_dao_anulacao_baixa_fat->m_modifica_zfit0046( i_fatura = wl_0038-nrfatura ).
+        o_dao_anulacao_baixa_fat->m_seleciona_banco( ).
+        o_dao_anulacao_baixa_fat->m_seleciona_zfit0046( EXPORTING i_nrfatura = wl_0038-nrfatura
+                                               IMPORTING e_guid_fatura = vl_guid_fatura
+                                                         e_dmbtr       = vl_dmbtr
+                                                         e_iof         = vl_iof  ).
+
+        o_dao_anulacao_baixa_fat->m_seleciona_zfit0001( i_xragl = wl_xragl ).
+
+        o_dao_anulacao_baixa_fat->m_seleciona_fatura_completa( i_nrfatura = wl_0038-nrfatura ).
+        READ TABLE o_dao_anulacao_baixa_fat->it_bseg_aux INTO DATA(wl_bseg) WITH KEY koart = 'D'.
+        READ TABLE o_dao_anulacao_baixa_fat->it_bkpf INDEX 1 INTO DATA(wl_bkpf).
+        m_monta_dados_baixa( EXPORTING i_hbkid = wl_bseg-hbkid
+                                       i_guid_fatura = vl_guid_fatura
+                                       i_nrfatura = wl_0038-nrfatura
+                                       i_dmbtr    = vl_dmbtr
+                                       i_bkpf = wl_bkpf
+                                       i_iof  = vl_iof
+                             IMPORTING e_erro = vl_erro ).
+        IF vl_erro IS INITIAL.
+          m_envia_baixa_legado( ).
+        ELSE.
+          MESSAGE 'Valor não pode ser negativo' TYPE 'S' DISPLAY LIKE 'E'.
+        ENDIF.
+      ENDIF.
+    ENDIF.
+
+  ENDMETHOD.
