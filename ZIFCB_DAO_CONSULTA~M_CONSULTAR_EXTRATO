@@ -1,0 +1,29 @@
+METHOD zifcb_dao_consulta~m_consultar_extrato.
+
+    IF v_app_extrato IS NOT INITIAL.
+
+      m_consultar_movto( ).
+
+      m_select_bseg( ).
+
+      m_select_vbak( ).
+
+      m_select_bkpf_st( ).
+
+      m_select_historico( ).
+
+    ELSE.
+
+      m_select_bkpf( ).
+
+      m_select_bseg( ).
+
+      m_consultar_movto( ).
+
+      m_select_vbak( ).
+
+    ENDIF.
+
+    r_retorno = abap_true.
+
+  ENDMETHOD.
