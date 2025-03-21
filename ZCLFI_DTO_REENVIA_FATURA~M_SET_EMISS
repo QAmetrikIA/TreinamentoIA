@@ -1,0 +1,3 @@
+  method M_SET_EMISS.
+     o_dao->v_emiss = i_emiss.
+  endmethod.
