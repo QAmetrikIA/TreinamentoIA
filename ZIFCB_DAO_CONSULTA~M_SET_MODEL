@@ -1,0 +1,7 @@
+METHOD zifcb_dao_consulta~m_set_model.
+
+    o_model = i_model_consulta.
+
+    r_retorno = abap_true.
+
+  ENDMETHOD.
