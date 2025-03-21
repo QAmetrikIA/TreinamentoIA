@@ -1,0 +1,3 @@
+  method M_ATUALIZAR_DADOS_ZSDTB0002.
+    o_dao_cancela_fatura->m_atualizar_dados_zsdtb0002( ).
+  endmethod.
