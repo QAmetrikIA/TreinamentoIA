@@ -1,0 +1,3 @@
+  METHOD m_set_motivo_canc.
+    o_dao_cancela_fatura->v_motivo = i_motivo.
+  ENDMETHOD.
