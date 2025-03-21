@@ -1,0 +1,3 @@
+  method M_GET_LOG_REENVIO.
+    r_log = it_log.
+  endmethod.
