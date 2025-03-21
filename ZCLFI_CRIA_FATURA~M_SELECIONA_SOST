@@ -1,0 +1,17 @@
+  METHOD m_seleciona_sost.
+    IF it_ztbfi0004 IS NOT INITIAL.
+      SELECT msgty msgv1 msgv2 objtp objyr objno
+       INTO TABLE it_sost
+       FROM sost
+        FOR ALL ENTRIES IN it_ztbfi0004
+       WHERE objtp      = it_ZTBFI0004-objtp
+         AND objyr      = it_ZTBFI0004-objyr
+         AND objno      = it_ZTBFI0004-objno.
+
+        sort it_sost by objtp
+                        objyr
+                        objno
+                        msgty.
+
+    ENDIF.
+  ENDMETHOD.
