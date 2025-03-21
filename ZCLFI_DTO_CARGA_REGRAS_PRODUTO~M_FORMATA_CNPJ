@@ -1,0 +1,12 @@
+  METHOD m_formata_cnpj.
+
+    REPLACE ALL OCCURRENCES OF '.' IN ch_cnpj WITH space.
+    CONDENSE ch_cnpj.
+
+    REPLACE ALL OCCURRENCES OF '/' IN ch_cnpj WITH space.
+    CONDENSE ch_cnpj.
+
+    REPLACE ALL OCCURRENCES OF '-' IN ch_cnpj WITH space.
+    CONDENSE ch_cnpj.
+
+  ENDMETHOD.
