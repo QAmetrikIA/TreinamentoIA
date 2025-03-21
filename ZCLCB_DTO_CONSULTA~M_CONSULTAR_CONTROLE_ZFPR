@@ -1,0 +1,7 @@
+    METHOD m_consultar_controle_zfpr.
+
+      o_dao_consulta->m_consulta_zfpr( ).
+
+      r_return = abap_false.
+
+    ENDMETHOD.
