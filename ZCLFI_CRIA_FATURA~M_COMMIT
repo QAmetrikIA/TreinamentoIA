@@ -1,0 +1,13 @@
+  METHOD m_commit.
+
+    IF v_erro EQ 'X'.
+      CALL FUNCTION 'BAPI_TRANSACTION_ROLLBACK'.
+    ELSE.
+
+      CALL FUNCTION 'BAPI_TRANSACTION_COMMIT'
+        EXPORTING
+          wait = 'X'.
+
+    ENDIF.
+
+  ENDMETHOD.
