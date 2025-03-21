@@ -1,0 +1,30 @@
+METHOD m_atualizar_dados_sint.
+
+    DATA vl_modify TYPE abap_bool.
+
+    CHECK it_compl_sint IS NOT INITIAL.
+
+    LOOP AT it_zfit0046 ASSIGNING FIELD-SYMBOL(<fsl_zfit0046>).
+
+      READ TABLE it_compl_sint INTO DATA(wl_compl)
+        WITH KEY nrfatura = <fsl_zfit0046>-nrfatura BINARY SEARCH.
+
+      CHECK sy-subrc IS INITIAL.
+
+      <fsl_zfit0046>-id_instrucao  = wl_compl-id_instrucao.
+      <fsl_zfit0046>-id_integracao = wl_compl-id_integracao.
+      <fsl_zfit0046>-guid_fatura   = wl_compl-guid_fatura.
+
+      vl_modify = abap_true.
+
+    ENDLOOP.
+
+    CHECK vl_modify = abap_true.
+
+    MODIFY zfit0046 FROM TABLE it_zfit0046.
+
+    IF sy-subrc IS INITIAL.
+      COMMIT WORK.
+    ENDIF.
+
+  ENDMETHOD.
