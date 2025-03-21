@@ -1,0 +1,7 @@
+  METHOD m_set_etapa.
+
+    v_etapa = i_etapa.
+
+    o_dao->w_ztbint005-etapa = i_etapa.
+
+  ENDMETHOD.
