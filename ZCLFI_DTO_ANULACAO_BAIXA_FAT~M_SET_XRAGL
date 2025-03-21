@@ -1,0 +1,3 @@
+  method M_SET_XRAGL.
+    o_dao_ANULACAO_BAIXA_FAT->it_xragl = I_XRAGL.
+  endmethod.
