@@ -1,0 +1,3 @@
+  METHOD m_set_ramo.
+    o_dao_job_fat->v_ramo = i_ramo.
+  ENDMETHOD.
