@@ -1,0 +1,3 @@
+  method M_SET_REENV.
+    o_dao->v_reenv = i_reenv.
+  endmethod.
