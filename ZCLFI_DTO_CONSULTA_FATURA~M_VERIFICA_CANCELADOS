@@ -1,0 +1,9 @@
+  METHOD m_verifica_cancelados.
+
+    READ TABLE I_FATURA_SINT TRANSPORTING NO FIELDS WITH KEY status = 'CA' BINARY SEARCH.
+    IF sy-subrc EQ 0.
+      MESSAGE 'Ação não permitida para faturas canceladas' TYPE 'S' DISPLAY LIKE 'E'.
+      C_ERRO = 'X'.
+    ENDIF.
+
+  ENDMETHOD.
