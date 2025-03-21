@@ -1,0 +1,39 @@
+METHOD zifcb_dao_consulta~m_select_vbak.
+
+    DATA: wal_estrutura_campos TYPE zstbcb_vbak.
+
+    DATA: vl_campo TYPE string.
+
+    DATA: itl_vbak TYPE zttbcb_vbak.
+
+    DATA(itl_movto) = o_dao_movto->m_get_movimento_table( ).
+
+    LOOP AT itl_movto INTO DATA(wal_movto) .
+
+      IF wal_movto-cb_pedido_bloqueio IS INITIAL.
+
+        DELETE itl_movto.
+
+      ENDIF.
+
+    ENDLOOP.
+
+    CHECK itl_movto IS NOT INITIAL.
+    vl_campo = zcl_abap_utility=>m_definir_campos( wal_estrutura_campos ).
+    CHECK vl_campo IS NOT INITIAL.
+
+    SELECT (vl_campo)
+    INTO TABLE itl_vbak
+    FROM vbak
+    FOR ALL ENTRIES IN itl_movto
+    WHERE vbeln = itl_movto-cb_pedido_bloqueio .
+
+    IF sy-subrc IS INITIAL.
+
+      o_model->m_set_vbak( itl_vbak ).
+
+    ENDIF.
+
+    r_return = abap_true.
+
+  ENDMETHOD.
