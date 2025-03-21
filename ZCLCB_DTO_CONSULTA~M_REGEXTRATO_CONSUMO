@@ -1,0 +1,51 @@
+METHOD m_regextrato_consumo.
+    DATA wal_extrato TYPE zstbcb_extrato_comp.
+
+    wal_extrato-budat = i_extrato-budat.
+    wal_extrato-gjahr = i_extrato-budat(4).
+    wal_extrato-shkzg = 'S'.
+    wal_extrato-dmbtr = i_extrato-dmbtr.
+    wal_extrato-vbeln = i_movto-cb_pedido_bloqueio.
+    wal_extrato-xblnr = i_movto-cb_nf_serie.
+    wal_extrato-cpudt = i_extrato-cpudt.
+    wal_extrato-cputm = i_extrato-cputm.
+    wal_extrato-ov    = i_extrato-ov.
+
+
+    IF i_extrato-ov(2) = 'ST'.
+      wal_extrato-cpudt = i_extrato-budat.
+      IF wal_extrato-xblnr <> ' '.
+        wal_extrato-xblnr = ' '.
+        wal_extrato-vencido = 'R'.
+      ELSE.
+        wal_extrato-vencido = 'S'.
+      ENDIF.
+    ENDIF.
+    IF i_movto-cb_status      = 'E'.
+      wal_extrato-vencido     = 'E'.
+      wal_extrato-budat       = i_movto-cb_data_modificacao.
+      wal_extrato-cpudt       = i_movto-cb_data_modificacao.
+      wal_extrato-cputm       = i_movto-cb_hora_modificacao.
+      wal_extrato-cb_codigo   = i_movto-cb_codigo.
+      wal_extrato-zuonr       = i_movto-cb_doc_ref_criacao.
+      wal_extrato-motivo_excl = i_movto-cb_texto.
+      wal_extrato-descricao   = i_extrato-descricao.
+
+    ENDIF.
+
+    TRY.
+        DATA(wal_extrato_aux) = ch_extrato[ vbeln = i_movto-cb_pedido_bloqueio
+                                            xblnr = i_movto-cb_nf_serie ].
+
+
+        wal_extrato_aux-dmbtr = i_extrato-dmbtr.
+        COLLECT wal_extrato_aux INTO ch_extrato.
+
+      CATCH cx_root.
+
+        COLLECT wal_extrato INTO ch_extrato.
+
+    ENDTRY.
+    r_retorno = abap_true.
+
+  ENDMETHOD.
