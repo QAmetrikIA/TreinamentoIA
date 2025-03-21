@@ -1,0 +1,60 @@
+  METHOD m_cancelar.
+
+    DATA: itl_envio    TYPE TABLE OF zstfi_fi007_return_canc.
+    DATA: wl_zfit0038 TYPE zfit0038.
+
+    DATA: vl_msg TYPE bapi_msg,
+          vl_doc TYPE bapi_fld.
+
+    DATA: ol_dto_boleto TYPE REF TO zclfi_dto_boleto.
+    DATA: ol_dto_envia_legado TYPE REF TO zclfi_dto_envia_legado.
+
+    CREATE OBJECT: ol_dto_boleto, ol_dto_envia_legado.
+    CLEAR: o_dao_cancela_fatura->w_sintetico_canc, o_dao_cancela_fatura->it_zfit0038_canc.
+
+    "primeiro passo do cancelamento: cancelar a fatura nas tabelas sintético e analítico
+
+    READ TABLE i_sintet INTO o_dao_cancela_fatura->w_sintetico_canc INDEX 1.
+
+    LOOP AT i_analit INTO DATA(wl_fatura_analit).
+      wl_fatura_analit-status = 'CA'.
+      MOVE-CORRESPONDING wl_fatura_analit TO wl_zfit0038.
+      APPEND wl_zfit0038 TO o_dao_cancela_fatura->it_zfit0038_canc.
+    ENDLOOP.
+
+
+    "segundo passo: chamar a DTO do boleto (para cancelamento)
+    "na dto vai seguir com a etapa da atualização das tabelas e chamada da interface de cancelamento
+    vl_msg = o_dao_cancela_fatura->w_sintetico_canc-des_cancel.
+    vl_doc = o_dao_cancela_fatura->w_sintetico_canc-nrfatura.
+
+    ol_dto_boleto->m_set_0046( o_dao_cancela_fatura->w_sintetico_canc ).
+    ol_dto_boleto->m_set_0038( o_dao_cancela_fatura->it_zfit0038_canc ).
+    ol_dto_boleto->m_set_param( 'ZFI034' ).
+    ol_dto_boleto->m_set_seqnr( '10' ).
+    ol_dto_boleto->m_set_status( 'S' ).
+    ol_dto_boleto->m_set_message( vl_msg ).
+    ol_dto_boleto->m_set_nrfatura( vl_doc ).
+    ol_dto_boleto->m_set_dtinc( sy-datum ).
+    ol_dto_boleto->m_set_hrinc( sy-uzeit ).
+    ol_dto_boleto->m_set_usinc( sy-uname ).
+    ol_dto_boleto->m_set_etapa( 'CANCBOL' ).
+    ol_dto_boleto->m_get_data( ).
+    ol_dto_boleto->m_update( ).
+
+
+    "envio ao legado
+    m_montar_dados( o_dao_cancela_fatura->w_sintetico_canc ).
+    ol_dto_envia_legado->m_set_interface( 'FI007_CANC' ).
+    ol_dto_envia_legado->m_set_sistema( 'S4HANA' ).
+    ol_dto_envia_legado->m_set_step( 'ENVLEG' ).
+
+    m_sel_dados_atualizacoes( ).
+    ol_dto_envia_legado->m_enviar_legado( CHANGING ch_dados_integracao = it_envio ).
+
+
+    m_atualizar_dados_sint( ).
+    m_atualizar_dados_zfit0001( ).
+    m_atualizar_dados_zsdtb0002( ).
+
+  ENDMETHOD.
