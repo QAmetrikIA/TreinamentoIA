@@ -1,0 +1,9 @@
+  METHOD m_seleciona_dados.
+
+    o_dao_refaturamento->m_buscar_ztbfi0014( ).
+    o_dao_refaturamento->m_buscar_zfit0046( ).
+    o_dao_refaturamento->m_buscar_zfit0038( ).
+    o_dao_refaturamento->m_buscar_bsid( ).
+    o_dao_refaturamento->m_buscar_ztbfi0013( ).
+
+  ENDMETHOD.
