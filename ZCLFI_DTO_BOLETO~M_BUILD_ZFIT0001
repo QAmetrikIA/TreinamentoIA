@@ -1,0 +1,80 @@
+  METHOD  m_build_zfit0001.
+
+    DATA: vl_parcela_atual  TYPE string,
+          vl_numero_parcela TYPE string.
+
+    DATA: wl_receipts TYPE zmws_receipts_boleto.
+
+    CHECK o_dao->w_zfit0046-dt_vencto IS NOT INITIAL.
+
+    LOOP AT o_dao->it_zfit0038 ASSIGNING FIELD-SYMBOL(<fsl_zfit0038>).
+
+      w_zfit0001-bukrs          = <fsl_zfit0038>-bukrs.
+      w_zfit0001-belnr          = <fsl_zfit0038>-belnr.
+      w_zfit0001-gjahr          = <fsl_zfit0038>-gjahr.
+      w_zfit0001-buzei          = '1'.
+      w_zfit0001-nrfatura       = <fsl_zfit0038>-nrfatura.
+      w_zfit0001-dtvencto_bol   = <fsl_zfit0038>-dta_venc_div.
+      w_zfit0001-dt_vencto      = w_zfit0001-dtvencto_bol.
+      w_zfit0001-dtvencto_orig  = <fsl_zfit0038>-netdt.
+      w_zfit0001-dias_atraso    = w_zfit0001-dt_vencto - w_zfit0001-dtvencto_orig.
+      SPLIT <fsl_zfit0038>-nrparc AT '/' INTO vl_parcela_atual vl_numero_parcela.
+      w_zfit0001-parcela_atual  = vl_parcela_atual.
+      w_zfit0001-numero_parcela = vl_numero_parcela.
+      w_zfit0001-bstkd          = <fsl_zfit0038>-bstkd.
+      w_zfit0001-our_number     = o_dao->w_bseg-xref3.
+      w_zfit0001-nrboleto       = o_dao->w_bseg-xref3.
+
+
+      w_zfit0001-transaction_id = w_response-result-transaction_id.
+      w_zfit0001-id_boleto      = w_response-result-request_id.
+
+      READ TABLE w_response-result-receipts[] INTO wl_receipts INDEX 1.
+
+      IF sy-subrc EQ 0.
+
+        w_zfit0001-linha_dig = wl_receipts-digitable_line.
+        w_zfit0001-id_integracao  = wl_receipts-payment_id.
+
+      ENDIF.
+
+      READ TABLE o_dao->it_order_id INTO DATA(wl_order_id) WITH KEY bukrs = <fsl_zfit0038>-bukrs
+                                                                    belnr = <fsl_zfit0038>-belnr
+                                                                    gjahr = <fsl_zfit0038>-gjahr BINARY SEARCH.
+      IF sy-subrc IS INITIAL.
+        READ TABLE o_dao->it_dados_boleto ASSIGNING FIELD-SYMBOL(<fsl_boleto>)
+                                          WITH TABLE KEY _order_id = wl_order_id-order_id.
+        IF sy-subrc IS INITIAL.
+          READ TABLE <fsl_boleto>-_payments ASSIGNING FIELD-SYMBOL(<fsl_payments>) INDEX 1.
+          IF sy-subrc IS INITIAL.
+            w_zfit0001-bankl         = <fsl_payments>-_aggrement_number.
+            w_zfit0001-inst_cobranca = <fsl_payments>-_instructions.
+          ENDIF.
+        ENDIF.
+      ENDIF.
+
+
+      IF v_etapa EQ 'CANCBOL'.
+        CHECK o_dao->w_zfit0046-des_cancel IS NOT INITIAL.
+        w_zfit0001-dt_vencto   = o_dao->w_zfit0046-dt_vencto.
+        IF w_zfit0001-dtvencto_bol IS INITIAL.
+          w_zfit0001-dtvencto_bol = w_zfit0001-dt_vencto.
+        ENDIF.
+        w_zfit0001-dias_atraso = w_zfit0001-dt_vencto - w_zfit0001-dtvencto_orig.
+        w_zfit0001-tp_cancel   = 'Cancelamento'.
+        w_zfit0001-des_cancel  = o_dao->w_zfit0046-des_cancel.
+        APPEND w_zfit0001 TO r_001.
+      ELSE.
+        CHECK o_dao->w_bseg-xref3 IS NOT INITIAL.
+        w_zfit0001-dt_vencto  = o_dao->w_zfit0046-dt_vencto.
+        IF w_zfit0001-dtvencto_bol IS INITIAL.
+          w_zfit0001-dtvencto_bol = w_zfit0001-dt_vencto.
+        ENDIF.
+        w_zfit0001-dias_atraso = w_zfit0001-dt_vencto - w_zfit0001-dtvencto_orig.
+        w_zfit0001-tp_cancel  = ' '.
+        w_zfit0001-des_cancel = ' '.
+        APPEND w_zfit0001 TO r_001.
+      ENDIF.
+
+    ENDLOOP.
+  ENDMETHOD.
