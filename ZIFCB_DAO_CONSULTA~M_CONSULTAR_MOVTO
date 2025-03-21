@@ -1,0 +1,41 @@
+METHOD zifcb_dao_consulta~m_consultar_movto.
+
+    IF o_dao_movto IS INITIAL.
+      CREATE OBJECT o_dao_movto TYPE zclcb_dao_movimento.
+    ENDIF.
+
+    IF v_app_extrato IS NOT INITIAL.
+
+      o_dao_movto->m_create_model( ).
+
+      o_dao_movto->m_set_model( o_model ).
+
+      o_dao_movto->m_select_movimento_extr( ).
+
+    ELSE.
+      DATA itl_dockey TYPE zttcb_dockey.
+
+      DATA wal_dockey TYPE zscb_dockey.
+
+      DATA(itl_bseg) = o_model->m_get_bseg( ).
+
+      LOOP AT itl_bseg ASSIGNING FIELD-SYMBOL(<fsl_bseg>).
+
+        CLEAR wal_dockey.
+
+        wal_dockey-belnr = <fsl_bseg>-belnr.
+        wal_dockey-bukrs = <fsl_bseg>-bukrs.
+        wal_dockey-gjahr = <fsl_bseg>-gjahr.
+        wal_dockey-kunnr = <fsl_bseg>-kunnr.
+
+        APPEND wal_dockey TO itl_dockey.
+
+      ENDLOOP.
+
+      o_dao_movto->m_set_dockey( itl_dockey ).
+      o_dao_movto->m_select_ztcb_movimento_table( ).
+    ENDIF.
+
+    r_return = abap_true.
+
+  ENDMETHOD.
