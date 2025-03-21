@@ -1,0 +1,9 @@
+  METHOD m_set_message.
+
+    IF v_etapa EQ 'CANCBOL'.
+
+      o_dao->w_ztbint005-message = i_message.
+
+    ENDIF.
+
+  ENDMETHOD.
