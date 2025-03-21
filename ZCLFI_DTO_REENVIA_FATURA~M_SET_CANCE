@@ -1,0 +1,3 @@
+  method M_SET_CANCE.
+     o_dao->v_cance = i_cance.
+  endmethod.
