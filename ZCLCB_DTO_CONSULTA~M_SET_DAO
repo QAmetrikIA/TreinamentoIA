@@ -1,0 +1,7 @@
+METHOD m_set_dao.
+
+    o_dao_consulta = i_dao.
+
+    r_return = abap_true.
+
+  ENDMETHOD.
