@@ -1,0 +1,5 @@
+  method M_BUSCA_BLOQUEIO.
+
+    r_validacao = o_dao_consulta->m_busca_bloqueio( ).
+
+  endmethod.
