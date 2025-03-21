@@ -1,0 +1,3 @@
+  METHOD m_set_cnpj.
+    o_dao_consulta_fatura->v_cnpj = i_cpf_cnpj.
+  ENDMETHOD.
