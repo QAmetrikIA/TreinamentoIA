@@ -1,0 +1,7 @@
+ METHOD constructor.
+    IF i_dao_job_fat IS INITIAL.
+      CREATE OBJECT o_dao_job_fat TYPE zclapi_dao_job_fat.
+    ELSE.
+      o_dao_job_fat = i_dao_job_fat.
+    ENDIF.
+  ENDMETHOD.
