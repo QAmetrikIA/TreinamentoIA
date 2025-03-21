@@ -1,0 +1,3 @@
+  method M_SET_W_ZFIT0046.
+    o_dao->m_set_w_zfit0046( i_zfit0046  ).
+  endmethod.
