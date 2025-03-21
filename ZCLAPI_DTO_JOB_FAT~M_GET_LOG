@@ -1,0 +1,3 @@
+  METHOD m_get_log.
+    r_log = o_dao_job_fat->it_log.
+  ENDMETHOD.
