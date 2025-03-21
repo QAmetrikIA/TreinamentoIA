@@ -1,0 +1,3 @@
+  METHOD m_elimina_registros.
+    o_dao_refaturamento->m_elimina_registros( ).
+  ENDMETHOD.
