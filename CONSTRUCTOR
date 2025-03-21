@@ -1,0 +1,19 @@
+METHOD constructor.
+
+    IF i_model IS INITIAL.
+      CREATE OBJECT: o_model.
+    ELSE.
+      o_model = i_model.
+    ENDIF.
+
+    IF i_movto IS INITIAL.
+      CREATE OBJECT: o_dao_movto.
+    ELSE.
+      o_dao_movto = i_movto.
+    ENDIF.
+
+    IF NOT i_app_extrato IS INITIAL.
+      v_app_extrato  = i_app_extrato .
+    ENDIF.
+
+  ENDMETHOD.
