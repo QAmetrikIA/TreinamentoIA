@@ -1,0 +1,44 @@
+METHOD zifcb_dao_consulta~m_valida_qtde_trans.
+
+    DATA: itl_distinct_pedidos TYPE TABLE OF ztcb_movimento-cb_pedido_bloqueio,
+          vl_qtd_pedidos       TYPE i.
+
+    DATA: ol_consultar_cashback TYPE REF TO zclcb_dto_consulta.
+
+    CREATE OBJECT ol_consultar_cashback.
+
+    DATA(itl_param) = o_model->m_get_param( ).
+    SORT itl_param BY parametro.
+    READ TABLE itl_param INTO DATA(wal_param) WITH KEY parametro = 'NUM_TRANSFERENCIAS' BINARY SEARCH.
+
+    SELECT cb_pedido_bloqueio
+      INTO TABLE itl_distinct_pedidos
+      FROM ztcb_movimento
+      WHERE cb_cliente = i_kunnr
+      AND cb_status = 'A'
+      AND cb_pedido_bloqueio IN i_vbeln
+      AND cb_nf_serie = ''.
+
+    SORT itl_distinct_pedidos.
+    DELETE ADJACENT DUPLICATES FROM itl_distinct_pedidos.
+
+    vl_qtd_pedidos = lines( itl_distinct_pedidos ).
+
+    IF vl_qtd_pedidos >= wal_param-valor.
+      r_return = abap_false.
+
+      IF wal_param-valor = 1.
+
+        CONCATENATE TEXT-001 wal_param-valor TEXT-004 TEXT-003 INTO e_message SEPARATED BY space.
+
+      ELSE.
+
+        CONCATENATE TEXT-001 wal_param-valor TEXT-002 TEXT-003 INTO e_message SEPARATED BY space.
+
+      ENDIF.
+
+    ELSE.
+      r_return = abap_true.
+    ENDIF.
+
+  ENDMETHOD.
