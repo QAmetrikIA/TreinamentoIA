@@ -1,0 +1,7 @@
+  METHOD constructor.
+    IF i_dao_consulta_fatura IS NOT INITIAL.
+      o_dao_consulta_fatura = i_dao_consulta_fatura.
+    ELSE.
+      CREATE OBJECT o_dao_consulta_fatura TYPE zclfi_dao_consulta_fatura.
+    ENDIF.
+  ENDMETHOD.
