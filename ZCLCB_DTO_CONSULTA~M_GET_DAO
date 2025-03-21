@@ -1,0 +1,7 @@
+METHOD m_get_dao.
+
+    IF i_teste IS INITIAL.
+      r_dao ?= o_dao_consulta.
+    ENDIF.
+
+  ENDMETHOD.
