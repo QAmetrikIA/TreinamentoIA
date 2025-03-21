@@ -1,0 +1,3 @@
+  METHOD m_set_fatura.
+    o_dao->v_fatura = i_fatura.
+  ENDMETHOD.
