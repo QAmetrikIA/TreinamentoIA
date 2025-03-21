@@ -1,0 +1,13 @@
+METHOD m_buscar_cb_bkpf.
+
+    r_return = abap_true.
+
+    IF i_teste IS INITIAL.
+      o_dao_consulta->o_dao_movto ?= o_dao_movto.
+    ENDIF.
+
+    o_dao_consulta->m_select_bkpf_cb( ).
+
+    r_return = abap_false.
+
+  ENDMETHOD.
