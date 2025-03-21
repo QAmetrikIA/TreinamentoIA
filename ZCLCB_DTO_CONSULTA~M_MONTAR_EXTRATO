@@ -1,0 +1,263 @@
+  METHOD m_montar_extrato.
+
+    DATA: itl_movimento        TYPE zttbcb_movimento,
+          itl_extrato_comp     TYPE zttbcb_extrato_comp,
+          itl_extrato_comp_aux TYPE zttbcb_extrato_comp.
+
+    DATA: wal_movimento    TYPE ztcb_movimento,
+          wal_extrato      TYPE zstbcb_extrato,
+          wal_extrato_comp TYPE zstbcb_extrato_comp,
+          wal_cashback     TYPE ztcb_tp_cashback,
+          wal_vbak         TYPE zstbcb_vbak,
+          wal_bkpf         TYPE zstbcb_bkpf.
+
+
+    DATA(ol_cashback) = NEW zclcb_model_document_post( ).
+
+    DATA ol_modelo TYPE REF TO zclcb_model_consulta.
+
+    ol_modelo = o_dao_consulta->m_get_model( ).
+
+    DATA(itl_bseg)      = ol_modelo->m_get_bseg( ).
+    DATA(itl_bkpf)      = ol_modelo->m_get_bkpf( ).
+    DATA(itl_vbak)      = ol_modelo->m_get_vbak( ).
+    DATA(itl_historico) = ol_modelo->m_get_historico( ).
+    DATA(rl_periodo)    = ol_modelo->m_get_periodo( ).
+
+    itl_movimento = o_dao_movto->m_get_movimento_table( ).
+
+    DATA(itl_extrato_contab_erros) = o_dao_movto->m_get_extrato_contab_cb( )..
+
+    CHECK itl_bseg IS NOT INITIAL.
+
+    SORT: itl_bseg BY bukrs ASCENDING
+                      belnr ASCENDING
+                      gjahr ASCENDING,
+
+          itl_bkpf BY bukrs ASCENDING
+                      belnr ASCENDING
+                      gjahr ASCENDING,
+
+          itl_movimento BY cb_empresa         ASCENDING
+                           cb_cliente         ASCENDING
+                           cb_ano_lancamento  ASCENDING
+                           cb_doc_lancamento  ASCENDING
+                           cb_item_lancamento ASCENDING,
+
+          it_tipo_cashback BY tp_cashback ASCENDING,
+
+          itl_vbak  BY vbeln ASCENDING.
+
+    DELETE itl_movimento WHERE cb_status = 'S'.
+
+    LOOP AT itl_bseg INTO DATA(wal_bseg).
+      CLEAR: wal_vbak, wal_bkpf.
+
+      IF wal_bseg-bschl EQ '09'.
+        CONTINUE.
+      ENDIF.
+
+      READ TABLE itl_movimento INTO wal_movimento WITH KEY  cb_empresa         = wal_bseg-bukrs
+                                                            cb_cliente         = wal_bseg-kunnr
+                                                            cb_ano_lancamento  = wal_bseg-gjahr
+                                                            cb_doc_lancamento  = wal_bseg-belnr
+                                                            cb_item_lancamento = wal_bseg-buzei
+                                                            BINARY SEARCH.
+
+      CHECK sy-subrc IS INITIAL
+      AND wal_movimento-cb_status NE 'S'.
+
+      READ TABLE it_tipo_cashback INTO wal_cashback WITH KEY tp_cashback = wal_movimento-cb_tipo BINARY SEARCH.
+
+      CHECK sy-subrc IS INITIAL.
+
+      ol_cashback->m_set_tp_cashback( wal_cashback-tp_cashback ).
+
+      wal_extrato_comp-budat     = wal_movimento-cb_data_documento.
+      wal_extrato_comp-gjahr     = wal_movimento-cb_ano_lancamento.
+      wal_extrato_comp-zfbdt     = wal_bseg-zfbdt.
+      wal_extrato_comp-vencido   = COND #( WHEN wal_extrato_comp-zfbdt < sy-datum THEN abap_true ELSE abap_false ).
+      wal_extrato_comp-zuonr     = wal_bseg-zuonr.
+      wal_extrato_comp-descricao = wal_cashback-descricao.
+      wal_extrato_comp-shkzg     = wal_bseg-shkzg.
+      wal_extrato_comp-dmbtr     = wal_bseg-dmbtr.
+      wal_extrato_comp-cpudt     = wal_movimento-cb_data_documento.
+      wal_extrato_comp-cputm     = wal_movimento-cb_hr_criacao.
+      wal_extrato_comp-ov        = wal_movimento-cb_pedido_bloqueio.
+      wal_extrato_comp-cb_codigo = wal_movimento-cb_codigo.
+
+      TRY.
+          DATA(wal_extrato_aux) = itl_extrato_comp[ zuonr = wal_extrato_comp-zuonr
+                                                   tp_cashback = wal_extrato_comp-tp_cashback descricao = wal_extrato_comp-descricao ].
+
+          wal_extrato_aux-dmbtr = wal_extrato_comp-dmbtr.
+
+
+          COLLECT wal_extrato_aux INTO itl_extrato_comp.
+
+        CATCH cx_root.
+          IF wal_movimento-cb_status = 'L'.
+            wal_extrato_comp-dmbtr_prim = wal_bseg-dmbtr.
+          ENDIF.
+          APPEND wal_extrato_comp TO itl_extrato_comp.
+      ENDTRY.
+
+      IF wal_movimento-cb_pedido_bloqueio IS NOT INITIAL
+         OR wal_movimento-cb_status = 'E'.
+
+        READ TABLE itl_vbak INTO wal_vbak WITH KEY vbeln = wal_movimento-cb_pedido_bloqueio BINARY SEARCH.
+
+        IF wal_bseg-augbl IS NOT INITIAL.
+          READ TABLE itl_bseg INTO DATA(wal_bseg_aux) WITH KEY bukrs = wal_bseg-bukrs
+                                                               belnr = wal_bseg-augbl
+                                                               gjahr = wal_bseg-augdt(04)
+                                                               BINARY SEARCH.
+          IF sy-subrc IS INITIAL.
+
+            DATA(vl_tabix) = sy-tabix.
+
+            wal_extrato_comp-budat     = wal_movimento-cb_data_documento.
+            wal_extrato_comp-gjahr     = wal_movimento-cb_ano_lancamento.
+            wal_extrato_comp-zfbdt     = wal_bseg-zfbdt.
+            wal_extrato_comp-vencido   = COND #( WHEN wal_extrato_comp-zfbdt < sy-datum THEN abap_true ELSE abap_false ).
+            wal_extrato_comp-zuonr     = wal_bseg-zuonr.
+            wal_extrato_comp-descricao = wal_cashback-descricao.
+            wal_extrato_comp-shkzg     = wal_bseg_aux-shkzg.
+            wal_extrato_comp-dmbtr     = wal_bseg_aux-dmbtr.
+            wal_extrato_comp-ov        = wal_movimento-cb_pedido_bloqueio.
+
+            DELETE itl_bseg INDEX vl_tabix.
+
+          ENDIF.
+
+        ENDIF.
+
+        IF wal_vbak IS INITIAL AND wal_movimento-cb_doc_consumo IS NOT INITIAL.
+          READ TABLE itl_bkpf INTO wal_bkpf WITH KEY belnr = wal_movimento-cb_doc_consumo BINARY SEARCH.
+          wal_extrato_comp-budat = wal_bkpf-cpudt.
+          wal_extrato_comp-cputm = wal_bkpf-cputm.
+
+        ELSEIF  wal_vbak IS INITIAL.
+          wal_extrato_comp-budat = wal_movimento-cb_data_modificacao.
+          wal_extrato_comp-cputm = wal_movimento-cb_hora_modificacao.
+        ELSE.
+          wal_extrato_comp-budat = wal_vbak-audat.
+          wal_extrato_comp-cputm = wal_vbak-erzet.
+        ENDIF.
+        IF wal_movimento-cb_status = 'E'.
+          WRITE  wal_movimento-cb_data_modificacao TO wal_movimento-cb_pedido_bloqueio.
+          WRITE  wal_movimento-cb_hora_modificacao TO wal_movimento-cb_nf_serie.
+        ENDIF.
+
+        r_retorno = m_regextrato_consumo( EXPORTING
+                              i_extrato = wal_extrato_comp
+                              i_movto   = wal_movimento
+                              i_vbak    = itl_vbak
+                            CHANGING
+                              ch_extrato =  itl_extrato_comp ).
+
+      ENDIF.
+
+    ENDLOOP.
+
+    CLEAR: wal_extrato_comp.
+
+    LOOP AT itl_historico INTO DATA(wal_historico).
+      READ TABLE rl_periodo INTO DATA(wal_periodo) INDEX 1.
+      IF wal_historico-dt_criacao_pedido >= wal_periodo-low.
+
+        wal_extrato_comp-budat     = wal_historico-dt_criacao_pedido.
+        wal_extrato_comp-gjahr     = wal_historico-dt_criacao_pedido+0(4).
+        wal_extrato_comp-vencido   = space.
+        wal_extrato_comp-vbeln     = wal_historico-pedido_bloqueio.
+        wal_extrato_comp-xblnr     = wal_historico-cb_nf_serie.
+        wal_extrato_comp-descricao = space.
+        wal_extrato_comp-shkzg     = 'S'.
+        wal_extrato_comp-dmbtr     = wal_historico-montante_cb.
+        wal_extrato_comp-cpudt     = wal_historico-dt_criacao_pedido.
+        wal_extrato_comp-cputm     = wal_historico-hr_criacao_pedido.
+        wal_extrato_comp-ov        = wal_historico-pedido_bloqueio.
+
+        APPEND wal_extrato_comp TO itl_extrato_comp.
+        CLEAR: wal_extrato_comp.
+
+      ENDIF.
+
+      IF wal_historico-data_mod <= wal_periodo-high.
+
+        wal_extrato_comp-budat     = wal_historico-data_mod.
+        wal_extrato_comp-gjahr     = wal_historico-data_mod+0(4).
+        wal_extrato_comp-vencido   = wal_historico-processo(1).
+        wal_extrato_comp-zuonr     = wal_historico-pedido_bloqueio.
+        wal_extrato_comp-xblnr     = wal_historico-cb_nf_serie.
+        wal_extrato_comp-descricao = wal_historico-processo.
+        wal_extrato_comp-shkzg     = 'H'.
+        wal_extrato_comp-dmbtr     = wal_historico-montante_cb.
+        wal_extrato_comp-cpudt     = wal_historico-data_mod.
+        wal_extrato_comp-cputm     = wal_historico-hora_mod.
+        wal_extrato_comp-ov        = space.
+
+        APPEND wal_extrato_comp TO itl_extrato_comp.
+        CLEAR: wal_extrato_comp.
+      ENDIF.
+
+    ENDLOOP.
+
+    SORT itl_extrato_comp DESCENDING BY budat cputm.
+
+    LOOP AT itl_extrato_comp INTO DATA(wal_extrato_comp2).
+      CHECK wal_extrato_comp2-ov IS INITIAL.
+
+      APPEND wal_extrato_comp2 TO itl_extrato_comp_aux.
+    ENDLOOP.
+
+    LOOP AT itl_extrato_comp ASSIGNING FIELD-SYMBOL(<fsl_extrato_comp>).
+      CHECK <fsl_extrato_comp>-shkzg EQ 'S' AND <fsl_extrato_comp>-vencido NE 'E'  .
+      m_agrupar_extrato( EXPORTING i_extrato_comp  = itl_extrato_comp
+        i_extrato = <fsl_extrato_comp>
+        CHANGING i_extrato_agrupa = itl_extrato_comp_aux ).
+    ENDLOOP.
+
+    SORT itl_extrato_comp_aux DESCENDING BY budat cputm.
+
+    READ TABLE rl_periodo INTO DATA(ls_periodo) INDEX 1.
+    IF sy-subrc = 0.
+      DELETE itl_extrato_comp_aux WHERE budat < ls_periodo-low
+                                        OR budat > ls_periodo-high.
+    ENDIF.
+
+    LOOP AT itl_extrato_comp_aux ASSIGNING FIELD-SYMBOL(<fsl_extrato_comp_aux>).
+      IF <fsl_extrato_comp_aux>-vencido = 'E' .
+        <fsl_extrato_comp_aux>-vbeln = space.
+        <fsl_extrato_comp_aux>-xblnr = space.
+      ENDIF.
+      IF <fsl_extrato_comp_aux>-shkzg = 'H' .
+        IF <fsl_extrato_comp_aux>-dmbtr    = <fsl_extrato_comp_aux>-dmbtr_prim.
+          <fsl_extrato_comp_aux>-vencido  = 'L'.
+        ELSE.
+          <fsl_extrato_comp_aux>-cb_codigo = space.
+        ENDIF.
+      ENDIF.
+    ENDLOOP.
+
+    MOVE-CORRESPONDING itl_extrato_comp_aux TO it_extrato.
+
+    LOOP AT itl_extrato_contab_erros INTO DATA(wal_contab_erros).
+
+      wal_extrato-vencido     = wal_contab_erros-cb_status.
+      wal_extrato-budat       = wal_contab_erros-cb_data_modificacao.
+      wal_extrato-cputm       = wal_contab_erros-cb_hora_modificacao.
+      wal_extrato-cb_codigo   = wal_contab_erros-cb_codigo.
+      wal_extrato-zuonr       = wal_contab_erros-cb_doc_ref_criacao.
+      wal_extrato-motivo_excl = wal_contab_erros-cb_texto.
+      wal_extrato-descricao   = 'Em processamento'.
+
+      APPEND wal_extrato TO it_extrato.
+
+    ENDLOOP.
+
+    SORT it_extrato DESCENDING BY budat cputm.
+
+    r_retorno = abap_true.
+
+  ENDMETHOD.
