@@ -1,0 +1,3 @@
+  method M_GET_038_BSAD.
+    r_return = o_dao_consulta_fatura->it_038_bsad.
+  endmethod.
