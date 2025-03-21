@@ -1,0 +1,53 @@
+  METHOD m_cancelar_faturas.
+
+
+    DATA: vl_flag TYPE flag.
+    DATA: itl_analit_aux TYPE zttfi_fatura_anal.
+    DATA: itl_analit_aux2 TYPE zttfi_fatura_anal.
+    DATA: itl_sintet_aux TYPE zttfi_fatura_sint.
+
+    IF o_dao_cancela_fatura->it_zfit0046 IS NOT INITIAL.
+      MOVE-CORRESPONDING o_dao_cancela_fatura->it_zfit0046 TO o_dao_cancela_fatura->it_fatura_sintet.
+    ENDIF.
+    IF o_dao_cancela_fatura->it_zfit0038 IS NOT INITIAL.
+      MOVE-CORRESPONDING o_dao_cancela_fatura->it_zfit0038 TO o_dao_cancela_fatura->it_fatura_analit.
+    ENDIF.
+
+    LOOP AT o_dao_cancela_fatura->it_fatura_sintet ASSIGNING FIELD-SYMBOL(<fsl_sintet>).
+      <fsl_sintet>-status = 'CA'. "Cancelado
+      <fsl_sintet>-cancelado_por = sy-uname.
+      <fsl_sintet>-cancelado_em = sy-datum.
+      <fsl_sintet>-cancelado_hora = sy-uzeit.
+      APPEND <fsl_sintet> TO itl_sintet_aux.
+
+
+      itl_analit_aux = VALUE #( FOR <fsl_analit> IN o_dao_cancela_fatura->it_fatura_analit  WHERE ( nrfatura  = <fsl_sintet>-nrfatura  )
+                                                                                                  ( <fsl_analit> ) ).
+
+
+      m_cancelar( EXPORTING i_sintet = itl_sintet_aux
+                            i_analit = itl_analit_aux ).
+
+
+      READ TABLE o_dao_cancela_fatura->it_ztbfi0014 ASSIGNING FIELD-SYMBOL(<fsl_ztbfi0014>) WITH KEY nrfatura = <fsl_sintet>-nrfatura BINARY SEARCH.
+      IF sy-subrc EQ 0.
+        LOOP AT o_dao_cancela_fatura->it_ztbfi0014  ASSIGNING FIELD-SYMBOL(<fsl_ztbfi0014_aux>) FROM sy-tabix.
+          IF <fsl_ztbfi0014_aux>-nrfatura NE <fsl_ztbfi0014>-nrfatura.
+            EXIT.
+          ENDIF.
+          <fsl_ztbfi0014_aux>-fat_canc = 'X'.
+        ENDLOOP.
+        APPEND VALUE #( mensagem = |Fatura { <fsl_sintet>-nrfatura } cancelada com sucesso|
+                        nrfatura = <fsl_sintet>-nrfatura ) TO o_dao_cancela_fatura->it_log.
+
+      ELSE.
+
+        APPEND VALUE #( mensagem = |Erro ao cancelar fatura { <fsl_sintet>-nrfatura } |
+                             nrfatura = <fsl_sintet>-nrfatura ) TO o_dao_cancela_fatura->it_log.
+
+      ENDIF.
+      CLEAR: itl_sintet_aux, itl_analit_aux.
+    ENDLOOP.
+
+
+  ENDMETHOD.
