@@ -1,0 +1,34 @@
+  METHOD m_montar_dados.
+
+    DATA: wl_tmtamp TYPE string.
+
+    DATA: vl_nrft   TYPE zfit0046-nrfatura.
+    DATA: itl_0046_a TYPE zttbfi_zfit0046,
+          itl_0046   TYPE TABLE OF zfit0046.
+
+    CLEAR: it_envio, w_envio, o_dao_cancela_fatura->it_compl_sint.
+
+
+
+      w_envio-_sender                       = c_sender.
+      w_envio-_createdat                    = zclapi_date_time=>m_convert_datetime_timestamp( i_date = sy-datum
+                                                                                              i_time = sy-uzeit ).
+      w_envio-_data-_idinstrucao            = c_cancel.
+      w_envio-_data-_idintegracao           = i_sintet-id_integracao.
+      w_envio-_data-_guidfatura             = i_sintet-guid_fatura.
+      w_envio-_data-_boleto-_nrfatura       = vl_nrft = i_sintet-nrfatura.
+      w_envio-_data-_boleto-_motivo         = i_sintet-des_cancel.
+      w_envio-_data-_boleto-_usuario        = sy-uname.
+      w_envio-_data-_boleto-_dtcancelamento = sy-datum.
+
+      APPEND w_envio TO it_envio.
+
+      m_save_dados_sint( i_fatura     = vl_nrft
+                         i_instrucao  = c_cancel
+                         i_integracao = i_sintet-id_integracao
+                         i_guid       = i_sintet-guid_fatura ).
+
+
+
+
+ENDMETHOD.
