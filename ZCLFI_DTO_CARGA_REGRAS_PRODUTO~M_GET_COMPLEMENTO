@@ -1,0 +1,12 @@
+  METHOD m_get_complemento.
+
+    READ TABLE i_complemento INTO r_dados_cnpj WITH KEY taxnum = i_cnpj BINARY SEARCH.
+
+    CHECK sy-subrc IS NOT INITIAL.
+
+    m_adiciona_erro( i_mensagem = 'Cadastro não encontrado para o CPF/CNPJ'(010) && | | && i_cnpj
+                     i_linha    = i_linha ).
+
+    e_erro = abap_true.
+
+  ENDMETHOD.
