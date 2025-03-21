@@ -1,0 +1,3 @@
+  method M_SET_FATURA.
+    o_dao_refaturamento->r_fatura = i_fatura.
+  endmethod.
