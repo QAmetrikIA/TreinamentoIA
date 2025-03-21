@@ -1,0 +1,3 @@
+  METHOD m_remover_log_jobs.
+    o_dao_job_fat->m_remover_log_jobs( ).
+  ENDMETHOD.
