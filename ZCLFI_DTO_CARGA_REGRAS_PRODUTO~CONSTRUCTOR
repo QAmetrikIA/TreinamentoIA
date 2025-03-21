@@ -1,0 +1,9 @@
+  METHOD constructor.
+
+    IF i_dao IS NOT INITIAL.
+      o_dao = i_dao.
+    ELSE.
+      CREATE OBJECT o_dao TYPE zclfi_dao_carga_regras_produto.
+    ENDIF.
+
+  ENDMETHOD.
