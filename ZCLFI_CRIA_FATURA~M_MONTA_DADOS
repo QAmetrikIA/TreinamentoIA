@@ -1,0 +1,385 @@
+  METHOD m_monta_dados.
+
+    DATA: itl_zfit0038_email TYPE zttbfi_zfit0038.
+    DATA: itl_email TYPE zttbfi_email.
+    DATA: itl_data  TYPE zttfi_excel_fatu_positions.
+
+    DATA: itl_sost TYPE zttfi_sost.
+
+    DATA: wl_email TYPE zstbfi_email.
+
+    DATA: wl_ztbfi0004  TYPE ztbfi0004.
+
+    DATA: wl_sood TYPE soodk.
+
+    DATA: wl_data     TYPE zstfi_excel_fatu_positions,
+          wl_order_id TYPE zstfi_de_para_boleto_doc.
+
+    DATA: wl_zfit0046 TYPE zfit0046,
+          wl_zfit0038 TYPE zfit0038,
+          vl_numero   TYPE numc10,
+          vl_msg      TYPE char100,
+          vl_type     TYPE zde_message_type.
+
+    DATA: vl_doc_size_pdf    TYPE i,
+          vl_doc_table_pdf   TYPE solix_tab,
+          vl_doc_created_pdf TYPE xfeld.
+
+    DATA: vl_pagador TYPE kunnr.
+
+    DATA: vl_guid_36 TYPE sysuuid_c36.
+
+    DATA: vl_interface_b64 TYPE zde_idinterface VALUE 'GED001',
+          vl_step_b64      TYPE c LENGTH 6 VALUE 'ENVLEG'.
+
+    DATA: ol_email TYPE REF TO zclfi_envia_email_faturamento.
+    CREATE OBJECT ol_email.
+    CREATE OBJECT o_boleto.
+    DATA: ol_dti TYPE REF TO zclfi_dti_zfi034.
+    CREATE OBJECT: ol_dti.
+
+    DATA : BEGIN OF wl_email_temp,
+             c1 TYPE ad_smtpadr,
+             c2 TYPE ad_smtpadr,
+             c3 TYPE ad_smtpadr,
+             c4 TYPE ad_smtpadr,
+             c5 TYPE ad_smtpadr,
+             c6 TYPE ad_smtpadr,
+             c7 TYPE ad_smtpadr,
+             c8 TYPE ad_smtpadr,
+             c9 TYPE ad_smtpadr,
+           END OF wl_email_temp.
+
+    "busca todos os emails dos pagadores para envio da fatura e boleto
+
+    DATA: itl_destinatarios TYPE zttbfi_email,
+          wl_destinatario   TYPE zstbfi_email.
+
+    DATA: itl_but021_fs  TYPE zttfi_but021_fs,
+          itl_adr6       TYPE zttbfi_adr6,
+          itl_0045_email TYPE zttfi_0045_email,
+          itl_texto      TYPE tvarvc_t.
+
+    DATA: vl_texto TYPE thead-tdname,
+          vl_prctr TYPE zstfi_fatura_sint-prctr.
+
+    DATA: ol_prepara_email TYPE REF TO zclfi_prepara_email_faturament.
+    CREATE OBJECT ol_prepara_email.
+    ol_prepara_email->m_busca_dados_dest( EXPORTING i_fatura_sint = it_fatura_sint
+                                          IMPORTING e_0045_email  = itl_0045_email ).
+    SORT itl_0045_email BY ramo pagador corretor.
+
+    ol_prepara_email->m_busca_param_texto_email( IMPORTING e_texto = itl_texto ).
+    SORT itl_texto BY low.
+
+    DATA(ol_ged001) = NEW zclapi_dti_ged001( ).
+
+    CLEAR: it_dados_boleto, it_boleto_gerado.
+
+    LOOP AT it_fatura_sint ASSIGNING FIELD-SYMBOL(<fsl_fatura>).
+      CLEAR: vl_prctr, vl_texto.
+      vl_prctr = <fsl_fatura>-prctr.
+      CALL FUNCTION 'CONVERSION_EXIT_ALPHA_OUTPUT'
+        EXPORTING
+          input  = vl_prctr
+        IMPORTING
+          output = vl_prctr
+        EXCEPTIONS
+          OTHERS = 1.
+
+
+      "antes de gerar a fatura, verifica se a data de vencimento é maior que o data atual
+      IF <fsl_fatura>-dt_vencto < sy-datum.
+        CALL FUNCTION 'CONVERSION_EXIT_ALPHA_OUTPUT'
+          EXPORTING
+            input  = <fsl_fatura>-pagador
+          IMPORTING
+            output = vl_pagador.
+        CONCATENATE 'Erro: Pagador' vl_pagador 'com data de venc. menor que a data atual'
+        INTO  w_log-mensagem SEPARATED BY space.
+        APPEND w_log TO it_log.
+
+        CONTINUE.
+      ENDIF.
+
+
+      REFRESH : itl_zfit0038_email, itl_data, itl_destinatarios.
+      CLEAR: vl_doc_size_pdf, vl_doc_table_pdf, vl_doc_created_pdf.
+
+      CLEAR vl_numero.
+
+
+      CALL FUNCTION 'NUMBER_RANGE_ENQUEUE'
+        EXPORTING
+          object = 'ZFI_FATURA'.
+
+      CALL FUNCTION 'NUMBER_GET_NEXT'
+        EXPORTING
+          nr_range_nr = '01'
+          object      = 'ZFI_FATURA'
+        IMPORTING
+          number      = vl_numero.
+
+      CALL FUNCTION 'NUMBER_RANGE_DEQUEUE'
+        EXPORTING
+          object = 'ZFI_FATURA'.
+
+
+      <fsl_fatura>-nrfatura = vl_numero.
+      <fsl_fatura>-status  = 'GE'.
+      <fsl_fatura>-criado_por   = sy-uname.
+      <fsl_fatura>-criado_em    = sy-datum.
+      <fsl_fatura>-criado_hora  = sy-uzeit.
+      MOVE-CORRESPONDING <fsl_fatura> TO wl_zfit0046.
+
+
+      "texto personalizado para o email
+      READ TABLE itl_texto INTO DATA(wl_texto) WITH KEY low = vl_prctr BINARY SEARCH.
+      IF sy-subrc EQ 0.
+        vl_texto = wl_texto-high.
+      ENDIF.
+
+      READ TABLE it_fatura_anal TRANSPORTING NO FIELDS WITH KEY pagador   = <fsl_fatura>-pagador
+                                                            bukrs        = <fsl_fatura>-bukrs
+                                                            prctr        = <fsl_fatura>-prctr
+                                                            qb_corretor  = <fsl_fatura>-qb_corretor
+                                                            dia_fech     = <fsl_fatura>-dia_fech
+                                                            dta_fech_div = <fsl_fatura>-dta_fech_div
+                                                            carencia     = <fsl_fatura>-carencia
+                                                            dta_venc_div = <fsl_fatura>-dta_venc_div
+                                                            BINARY SEARCH.
+
+      IF sy-subrc EQ 0.
+
+        LOOP AT it_fatura_anal ASSIGNING FIELD-SYMBOL(<fsl_fatura_anal>) FROM sy-tabix.
+
+          IF <fsl_fatura_anal>-nrfatura IS NOT INITIAL.
+            CONTINUE.
+          ENDIF.
+
+          IF    <fsl_fatura_anal>-pagador     EQ <fsl_fatura>-pagador
+            AND <fsl_fatura_anal>-bukrs       EQ <fsl_fatura>-bukrs
+            AND <fsl_fatura_anal>-prctr       EQ <fsl_fatura>-prctr
+            AND <fsl_fatura_anal>-qb_corretor EQ <fsl_fatura>-qb_corretor
+            AND <fsl_fatura_anal>-dia_fech    EQ <fsl_fatura>-dia_fech
+            AND <fsl_fatura_anal>-dta_fech_div = <fsl_fatura>-dta_fech_div
+            AND <fsl_fatura_anal>-carencia     = <fsl_fatura>-carencia
+            AND <fsl_fatura_anal>-dta_venc_div = <fsl_fatura>-dta_venc_div.
+
+
+            MOVE-CORRESPONDING <fsl_fatura_anal> TO wl_zfit0038.
+            wl_zfit0038-nrfatura = vl_numero.
+            "No momento da criação da fatura deve manter esse status
+            wl_zfit0038-status = 'GE'."Gerado
+            APPEND wl_zfit0038 TO it_zfit0038."tabela que vai para a atualização do banco de dados
+            APPEND wl_zfit0038 TO itl_zfit0038_email."tabela que vai para o email
+
+
+            "esta parte é para a montagem da fatura em excel,
+            "já manda montado para a classe de email para evitar mais um loop posteriormente
+            MOVE-CORRESPONDING wl_zfit0038 TO wl_data.
+            CONCATENATE wl_zfit0038-netdt+6(2) '/' wl_zfit0038-netdt+4(2) '/' wl_zfit0038-netdt(4) INTO
+            wl_data-netdt.
+            wl_data-valor          = wl_zfit0038-dmbtr.
+            wl_data-apolice        = wl_zfit0038-bstkd.
+            wl_data-cnpj_locatario = wl_zfit0038-cnpj_loc_tomador.
+            wl_data-loc_tomador    = wl_zfit0038-nome_loc_tomador.
+            wl_data-loc_segurado   = wl_zfit0038-nome_seg_ben.
+            APPEND wl_data TO itl_data.
+
+          ELSE.
+            EXIT.
+          ENDIF.
+
+        ENDLOOP.
+
+        SORT: itl_zfit0038_email  BY pagador bukrs prctr qb_corretor dia_fech dta_fech_div carencia dta_venc_div.
+
+        "boleto
+        o_boleto->m_set_0046( <fsl_fatura> ).
+        o_boleto->m_set_0038(  itl_zfit0038_email ).
+        o_boleto->m_gerar( ).
+        o_boleto->m_convert_otf( IMPORTING e_doc_size       = vl_doc_size_pdf
+                                           e_binary_content = vl_doc_table_pdf
+                                           e_doc_created    = vl_doc_created_pdf ).
+
+        APPEND o_boleto->w_dados_boleto TO it_dados_boleto.
+        APPEND o_boleto->w_response-result TO it_boleto_gerado.
+
+        " Preencher tabela com base64, idexcel e idpdf
+        APPEND INITIAL LINE TO it_base64 ASSIGNING FIELD-SYMBOL(<fsl_base64>).
+        <fsl_base64>-nrfatura = <fsl_fatura>-nrfatura.
+        <fsl_base64>-idpdf = o_boleto->v_idpdf.
+
+        READ TABLE itl_zfit0038_email INTO wl_zfit0038 INDEX 1.
+
+        IF sy-subrc IS INITIAL.
+          wl_order_id-bukrs    = wl_zfit0038-bukrs.
+          wl_order_id-belnr    = wl_zfit0038-belnr.
+          wl_order_id-gjahr    = wl_zfit0038-gjahr.
+          wl_order_id-order_id = o_boleto->w_dados_boleto-_order_id.
+          APPEND wl_order_id TO it_order_id.
+        ENDIF.
+
+        "se deu erro no boleto, não envia email e não gera fatura, apenas quando der sucesso
+        IF vl_doc_size_pdf IS NOT INITIAL.
+          " se sucesso com boleto, gerar o guid_fatura
+          <fsl_fatura>-guid_fatura = wl_zfit0046-guid_fatura = zclapi_gerar_guid36=>m_executar( ).
+
+          READ TABLE itl_0045_email INTO DATA(wl_0045_email) WITH KEY ramo = wl_zfit0038-prctr
+                                                                     pagador = wl_zfit0038-pagador
+                                                                     corretor = wl_zfit0038-corretor BINARY SEARCH.
+          IF sy-subrc IS NOT INITIAL.
+            READ TABLE itl_0045_email INTO wl_0045_email WITH KEY ramo = wl_zfit0038-prctr
+                                                              pagador = wl_zfit0038-pagador
+                                                              corretor = '' BINARY SEARCH.
+          ENDIF.
+          IF sy-subrc EQ 0.
+            wl_destinatario-nrfatura = <fsl_fatura>-nrfatura.
+            IF wl_0045_email-email CA ';'.
+              SPLIT wl_0045_email-email AT ';' INTO wl_email_temp-c1 wl_email_temp-c2 wl_email_temp-c3 wl_email_temp-c4 wl_email_temp-c5
+                    wl_email_temp-c6 wl_email_temp-c7 wl_email_temp-c8 wl_email_temp-c9.
+
+              IF wl_email_temp-c1 IS NOT INITIAL.
+                wl_destinatario-email = wl_email_temp-c1.
+                APPEND wl_destinatario TO itl_destinatarios.
+              ENDIF.
+              IF wl_email_temp-c2 IS NOT INITIAL.
+                wl_destinatario-email = wl_email_temp-c2.
+                APPEND wl_destinatario TO itl_destinatarios.
+              ENDIF.
+              IF wl_email_temp-c3 IS NOT INITIAL.
+                wl_destinatario-email = wl_email_temp-c3.
+                APPEND wl_destinatario TO itl_destinatarios.
+              ENDIF.
+              IF wl_email_temp-c4 IS NOT INITIAL.
+                wl_destinatario-email = wl_email_temp-c4.
+                APPEND wl_destinatario TO itl_destinatarios.
+              ENDIF.
+              IF wl_email_temp-c5 IS NOT INITIAL.
+                wl_destinatario-email = wl_email_temp-c5.
+                APPEND wl_destinatario TO itl_destinatarios.
+              ENDIF.
+              IF wl_email_temp-c6 IS NOT INITIAL.
+                wl_destinatario-email = wl_email_temp-c6.
+                APPEND wl_destinatario TO itl_destinatarios.
+              ENDIF.
+              IF wl_email_temp-c7 IS NOT INITIAL.
+                wl_destinatario-email = wl_email_temp-c7.
+                APPEND wl_destinatario TO itl_destinatarios.
+              ENDIF.
+              IF wl_email_temp-c8 IS NOT INITIAL.
+                wl_destinatario-email = wl_email_temp-c8.
+                APPEND wl_destinatario TO itl_destinatarios.
+              ENDIF.
+              IF wl_email_temp-c9 IS NOT INITIAL.
+                wl_destinatario-email = wl_email_temp-c9.
+                APPEND wl_destinatario TO itl_destinatarios.
+              ENDIF.
+
+            ELSE.
+              wl_destinatario-email    = wl_0045_email-email.
+              APPEND wl_destinatario TO itl_destinatarios.
+            ENDIF.
+
+
+          ENDIF.
+
+          "Envio do email
+          ol_email->m_set_boleto( EXPORTING i_doc_size       = vl_doc_size_pdf
+                                            i_binary_content = vl_doc_table_pdf
+                                            i_doc_created    = vl_doc_created_pdf ).
+
+          ol_email->m_set_excel_data( EXPORTING i_data = itl_data ).
+
+          ol_email->m_set_destinatario( EXPORTING i_destinatario = itl_destinatarios ).
+
+          ol_email->m_set_texto_email( EXPORTING i_texto = vl_texto ).
+
+          ol_email->m_monta_email( EXPORTING i_zfit0038 =  itl_zfit0038_email
+                                             i_zfit0046 = <fsl_fatura>
+                                             i_email    = itl_email
+                                   IMPORTING e_msg      = vl_msg
+                                             e_type     = vl_type
+                                             e_sost     = itl_sost
+                                             e_base64   = DATA(vl_base64) ).
+
+          ol_email->m_get_sood( IMPORTING e_sood = wl_sood ).
+
+          IF vl_base64 IS NOT INITIAL.
+            ol_ged001->m_set_nrfatura( <fsl_fatura>-nrfatura ).
+            ol_ged001->m_set_base64( vl_base64 ).
+            ol_ged001->m_set_pagador( wl_zfit0038-pagador ).
+            ol_ged001->m_set_interface( vl_interface_b64 ).
+            ol_ged001->m_set_step( vl_step_b64 ).
+            ol_ged001->m_enviar_base64( ).
+            DATA(vl_idexcel) = ol_ged001->m_get_idexcel( ).
+
+            IF vl_idexcel IS NOT INITIAL.
+              <fsl_base64>-base64  = vl_base64.
+              <fsl_base64>-idexcel = vl_idexcel.
+            ENDIF.
+          ENDIF.
+
+          IF vl_type EQ 'I'.
+            wl_zfit0046-status_email = 'S'.
+          ELSE.
+            wl_zfit0046-status_email = vl_type.
+          ENDIF.
+          "  se o doc_size está em branco significa que não criou o boleto
+          IF vl_doc_size_pdf IS INITIAL.
+            wl_zfit0046-status_boleto = 'E'.
+          ELSE.
+            wl_zfit0046-status_boleto = 'S'.
+          ENDIF.
+
+
+          wl_ztbfi0004-nrfatura      = <fsl_fatura>-nrfatura.
+          wl_ztbfi0004-objtp         = wl_sood-objtp.
+          wl_ztbfi0004-objyr         = wl_sood-objyr.
+          wl_ztbfi0004-objno         = wl_sood-objno.
+
+          APPEND wl_ztbfi0004 TO it_ztbfi0004.
+
+          "caso não tenha email cadastrado, colocar erro no log
+          IF itl_destinatarios IS INITIAL.
+
+            wl_zfit0046-status_email = 'E'.
+
+            CLEAR wl_ztbfi0004.
+            wl_ztbfi0004-nrfatura      = <fsl_fatura>-nrfatura.
+            wl_ztbfi0004-mensagem      = 'Erro no envio, e-mail não cadastrado'.
+            wl_ztbfi0004-status_email  = 'E'.
+            APPEND wl_ztbfi0004 TO it_ztbfi0004.
+          ENDIF.
+
+          APPEND wl_zfit0046 TO it_zfit0046.
+
+          "  ao final de cada fatura gerada, efetua a atualização das tabelas
+          " se deu sucesso no boleto
+          ol_dti->m_set_0046( <fsl_fatura> ).
+          ol_dti->m_set_0038(  itl_zfit0038_email ).
+          ol_dti->m_set_response( o_boleto->m_get_response( ) ).
+          ol_dti->m_set_otf( o_boleto->m_get_otf( ) ).
+          ol_dti->m_set_it_order_id( it_order_id ).
+          ol_dti->m_set_it_dados_boleto( it_dados_boleto ).
+          ol_dti->m_cria_atualizacao( ).
+
+        ELSE.
+
+          READ TABLE it_zfit0038 WITH KEY nrfatura = vl_numero BINARY SEARCH TRANSPORTING NO FIELDS.
+          IF sy-subrc IS INITIAL.
+            DELETE it_zfit0038 WHERE nrfatura = vl_numero.
+            CONCATENATE 'Erro ao gerar boleto para pagador' <fsl_fatura>-pagador ' - Fatura: ' vl_numero
+            INTO w_log-mensagem SEPARATED BY space.
+            w_log-nrfatura = vl_numero.
+            APPEND w_log TO it_log.
+            v_erro = abap_true.
+          ENDIF.
+        ENDIF.
+
+      ENDIF.
+
+    ENDLOOP.
+
+  ENDMETHOD.
