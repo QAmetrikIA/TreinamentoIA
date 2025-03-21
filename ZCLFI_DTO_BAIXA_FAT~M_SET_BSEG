@@ -1,0 +1,3 @@
+  METHOD m_set_bseg.
+    o_dao_baixa_fat->it_bseg = i_bseg.
+  ENDMETHOD.
