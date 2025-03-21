@@ -1,0 +1,20 @@
+  METHOD m_processar.
+
+    DATA: vl_mensagem TYPE string.
+
+    DATA(itl_dados) = o_dao->m_carregar_arquivo( i_file = v_file ).
+
+    IF lines( itl_dados ) > 10000.
+      vl_mensagem = 'Arquivo com'(007) && | | && sy-tfill && | | && 'linhas.'(008) && | | && 'Permitido máximo de 10.000 linhas, favor quebrar o arquivo!'(009).
+      MESSAGE vl_mensagem TYPE 'E' RAISING limit_max_lines.
+    ENDIF.
+
+    DATA(itl_complemento) = o_dao->m_buscar_dados_complementares( itl_dados ).
+
+    DATA(itl_centro_lucro) = o_dao->m_buscar_centro_lucro( itl_dados ).
+
+    m_grava_zfit0045( i_dados        = itl_dados
+                      i_complemento  = itl_complemento
+                      i_centro_lucro = itl_centro_lucro ).
+
+  ENDMETHOD.
