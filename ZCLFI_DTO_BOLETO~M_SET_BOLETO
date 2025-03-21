@@ -1,0 +1,3 @@
+  METHOD m_set_boleto.
+    w_response = i_response.
+  ENDMETHOD.
