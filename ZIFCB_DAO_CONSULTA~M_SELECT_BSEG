@@ -1,0 +1,73 @@
+METHOD zifcb_dao_consulta~m_select_bseg.
+
+    DATA: wal_estrutura_campos TYPE zstbcb_bseg,
+          wal_cliente          TYPE range_kunnr_wa.
+
+    DATA: rl_cliente TYPE range_kunnr_tab.
+
+    DATA: itl_bseg TYPE zttbcb_bseg.
+
+    DATA: vl_campo TYPE string.
+
+    DATA(itl_bkpf)   = o_model->m_get_bkpf( ).
+
+    DATA(vl_cliente) = o_model->m_get_cliente( ).
+
+    DATA(rl_cliente_sede) = o_model->m_get_cliente_sede( ).
+
+    IF vl_cliente IS NOT INITIAL.
+
+      wal_cliente-sign   = 'I'.
+      wal_cliente-option = 'EQ'.
+      wal_cliente-low    = vl_cliente.
+      APPEND wal_cliente TO rl_cliente.
+
+    ELSEIF rl_cliente_sede IS NOT INITIAL.
+
+      rl_cliente = rl_cliente_sede.
+
+    ENDIF.
+
+    vl_campo = zcl_abap_utility=>m_definir_campos( wal_estrutura_campos ).
+
+    CHECK vl_campo IS NOT INITIAL.
+
+    IF v_app_extrato IS NOT INITIAL.
+
+      DATA(itl_movimento) = o_dao_movto->m_get_movimento_table( ).
+
+      itl_movimento  =  o_dao_movto->m_select_mov_complementares( EXPORTING i_movimento = itl_movimento ).
+
+      CHECK itl_movimento IS NOT INITIAL.
+
+      SELECT (vl_campo)
+          FROM bseg
+          INTO TABLE itl_bseg
+          FOR ALL ENTRIES IN itl_movimento
+          WHERE bukrs = itl_movimento-cb_empresa
+            AND belnr = itl_movimento-cb_doc_lancamento
+            AND gjahr = itl_movimento-cb_ano_lancamento
+            AND kunnr = itl_movimento-cb_cliente.
+
+    ELSE.
+      CHECK itl_bkpf IS NOT INITIAL.
+
+      SELECT (vl_campo)
+          FROM bseg
+          INTO TABLE itl_bseg
+          FOR ALL ENTRIES IN itl_bkpf
+          WHERE bukrs = itl_bkpf-bukrs
+            AND belnr = itl_bkpf-belnr
+            AND gjahr = itl_bkpf-gjahr
+            AND kunnr IN rl_cliente.
+
+    ENDIF.
+    IF sy-subrc IS INITIAL.
+
+      o_model->m_set_bseg( itl_bseg ).
+
+    ENDIF.
+
+    r_retorno = abap_true.
+
+  ENDMETHOD.
