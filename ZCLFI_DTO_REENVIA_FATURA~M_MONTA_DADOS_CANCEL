@@ -1,0 +1,56 @@
+  METHOD m_monta_dados_cancel.
+    DATA: wl_envio    TYPE zstfi_fi007_return_canc,
+          wl_alv_canc TYPE zstfi_alv_reenvio_canc_fatura.
+    DATA: vl_modify_46 TYPE char1.
+
+    SORT o_dao->it_ztbint003 BY id_sap dtinc hrinc DESCENDING.
+
+    LOOP AT  o_dao->it_zfit0046 ASSIGNING FIELD-SYMBOL(<fls_0046>).
+      CLEAR: wl_envio, wl_alv_canc.
+      IF  <fls_0046>-status NE 'CA'.
+        r_erro = abap_true.
+        EXIT.
+      ENDIF.
+      "Reenviar, mesmo com sucesso
+      IF o_dao->v_reenv IS INITIAL AND o_dao->v_send IS NOT INITIAL.
+        READ TABLE o_dao->it_ztbint003 INTO DATA(wl_003) WITH KEY id_sap = <fls_0046>-nrfatura BINARY SEARCH.
+
+        IF sy-subrc EQ 0 AND wl_003-status = 'S'.
+          CONTINUE.
+        ENDIF.
+      ENDIF.
+
+      wl_envio-_sender                       = c_sender.
+      wl_envio-_createdat                    = zclapi_date_time=>m_convert_datetime_timestamp( i_date = <fls_0046>-cancelado_em
+                                                                                               i_time = <fls_0046>-cancelado_hora ).
+      IF <fls_0046>-id_instrucao NE c_cancel.
+        vl_modify_46 = abap_true.
+        wl_envio-_data-_idinstrucao            = <fls_0046>-id_instrucao = c_cancel.
+      ELSE.
+        wl_envio-_data-_idinstrucao            = <fls_0046>-id_instrucao.
+      ENDIF.
+      wl_envio-_data-_guidfatura             = <fls_0046>-guid_fatura.
+      wl_envio-_data-_idintegracao           = <fls_0046>-id_integracao.
+      wl_envio-_data-_boleto-_nrfatura       = <fls_0046>-nrfatura.
+      wl_envio-_data-_boleto-_motivo         = <fls_0046>-des_cancel.
+      wl_envio-_data-_boleto-_usuario        = <fls_0046>-cancelado_por.
+      wl_envio-_data-_boleto-_dtcancelamento = <fls_0046>-cancelado_em.
+
+
+      "Se a opção de alv estiver marcada
+      IF o_dao->v_alv IS NOT INITIAL.
+        MOVE-CORRESPONDING wl_envio TO wl_alv_canc.
+        MOVE-CORRESPONDING wl_envio-_data TO wl_alv_canc.
+        MOVE-CORRESPONDING wl_envio-_data-_boleto TO wl_alv_canc.
+        APPEND wl_alv_canc TO it_alv_canc.
+
+      ELSE.
+        APPEND wl_envio TO it_envio.
+      ENDIF.
+    ENDLOOP.
+
+
+    IF vl_modify_46 IS NOT INITIAL AND o_dao->v_send IS NOT INITIAL.
+      o_dao->m_modifica_zfit0046( ).
+    ENDIF.
+  ENDMETHOD.
