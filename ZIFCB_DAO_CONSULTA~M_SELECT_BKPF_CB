@@ -1,0 +1,28 @@
+METHOD zifcb_dao_consulta~m_select_bkpf_cb.
+
+    DATA: vl_campo             TYPE string,
+          wal_estrutura_campos TYPE zstbcb_bkpf,
+          itl_bkpf             TYPE zttbcb_bkpf.
+
+    vl_campo = zcl_abap_utility=>m_definir_campos( wal_estrutura_campos ).
+
+    CHECK vl_campo IS NOT INITIAL.
+
+    DATA(wal_movimento) = o_dao_movto->m_get_movimento_single( ).
+
+    CHECK wal_movimento IS NOT INITIAL.
+
+    SELECT (vl_campo)
+    FROM bkpf
+    INTO TABLE itl_bkpf
+    WHERE
+      bukrs = '5501'
+      AND belnr = wal_movimento-cb_doc_lancamento.
+
+    IF sy-subrc IS INITIAL  .
+
+      o_model->m_set_bkpf( itl_bkpf ).
+
+    ENDIF.
+
+  ENDMETHOD.
