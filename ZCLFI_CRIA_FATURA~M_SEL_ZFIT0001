@@ -1,0 +1,13 @@
+  METHOD m_sel_zfit0001.
+
+    CHECK it_zfit0038 IS NOT INITIAL.
+
+    SELECT *
+      FROM zfit0001
+      INTO TABLE it_zfit0001
+       FOR ALL ENTRIES IN it_zfit0038
+     WHERE bukrs = it_zfit0038-bukrs
+       AND belnr = it_zfit0038-belnr
+       AND gjahr = it_zfit0038-gjahr.
+
+  ENDMETHOD.
