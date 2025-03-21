@@ -1,0 +1,57 @@
+  METHOD m_canc_boleto.
+
+    DATA: ol_go_connector TYPE REF TO zcl_integrar_connector_out,
+          ol_log          TYPE REF TO zcl_integrar_log,
+          ol_top          TYPE REF TO zcl_top_geral.
+
+    DATA: wl_response      TYPE zmws_st_interfaces_response,
+          wl_0038          TYPE zfit0038,
+          wl_0001          TYPE zfit0001,
+          vl_erro          TYPE string,
+          vl_status        TYPE string,
+          vl_error_connect TYPE string.
+    DATA: vl_id_sap        TYPE zde_id_sap.
+
+    DATA: wl_fi003 TYPE zmws_fi003_cancel_boleto.
+
+    CREATE OBJECT ol_top.
+
+    ol_log = NEW zcl_integrar_log(
+       subobject  = ol_top->gc_interfaces-fi003 " Log de aplicação: subobjeto
+       id_sistema = ol_top->c_sap               " ID do Sistema de Origem
+       id_sap     = vl_id_sap
+
+    ).
+
+    READ TABLE o_dao->it_zfit0038 INTO wl_0038 INDEX 1.
+    IF sy-subrc EQ 0.
+
+      READ TABLE o_dao->it_zfit0001 INTO wl_0001 WITH KEY bukrs = wl_0038-bukrs
+                                                         belnr = wl_0038-belnr
+                                                         gjahr = wl_0038-gjahr BINARY SEARCH.
+
+      CHECK sy-subrc IS INITIAL.
+
+      wl_fi003-_transaction_id = wl_0001-transaction_id.
+      wl_fi003-_request_id = wl_0001-guid_fatura.
+      wl_fi003-_our_number = wl_0001-our_number.
+      wl_fi003-_bank = 'Bradesco'."wl_0001-bankk.
+
+      ol_go_connector = NEW zcl_integrar_connector_out(
+             subobject = ol_top->gc_steps-cacelar_boleto
+             log       = ol_log
+             id_sap    = ol_log->id_sap
+             top       = ol_top
+                             ).
+
+      ol_go_connector->fi003_cancelar_boleto(
+        EXPORTING
+          i_step     = ol_top->gc_steps-cacelar_boleto
+          i_request  = wl_fi003
+        IMPORTING
+          e_response = wl_response
+          e_error    = vl_erro
+          e_status   = vl_status
+      ).
+    ENDIF.
+  ENDMETHOD.
