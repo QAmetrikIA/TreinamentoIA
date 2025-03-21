@@ -1,0 +1,9 @@
+  METHOD m_monta_nome.
+
+    IF i_dados-name_first IS NOT INITIAL.
+      r_nome = i_dados-name_first && | | && i_dados-name_last  && | | && i_dados-name_last2  && | | && i_dados-name_lst2.
+    ELSE.
+      r_nome = i_dados-name_org1. "i_dados-name_org2 i_dados-name_org3 i_dados-name_org4 INTO r_nome.
+    ENDIF.
+
+  ENDMETHOD.
