@@ -34,6 +34,7 @@ Interface (DAO – Data Access Object)
 Interfaces DAO são utilizadas para definir métodos que acessam o banco de dados, separando a lógica de persistência da lógica de negócios.
 
 ZIFCB_DAO_CONSULTA – Interface que define operações de consulta no banco de dados. Provavelmente, contém métodos para buscar faturas, clientes ou outros registros financeiros.
+
 💡 Resumo Final:
 
 As classes DTO (Data Transfer Object) são usadas apenas para transportar dados, sem lógica de negócios.
