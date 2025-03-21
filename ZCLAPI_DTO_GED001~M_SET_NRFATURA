@@ -1,0 +1,3 @@
+  METHOD m_set_nrfatura.
+    o_dao_ged001->v_nrfatura = i_nrfatura.
+  ENDMETHOD.
