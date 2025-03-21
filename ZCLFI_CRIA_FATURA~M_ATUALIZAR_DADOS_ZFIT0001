@@ -1,0 +1,11 @@
+  METHOD m_atualizar_dados_zfit0001.
+
+    CHECK it_zfit0001 IS NOT INITIAL.
+
+    MODIFY zfit0001 FROM TABLE it_zfit0001.
+
+    IF sy-subrc IS INITIAL.
+      COMMIT WORK.
+    ENDIF.
+
+  ENDMETHOD.
