@@ -1,0 +1,5 @@
+method ZIFCB_DAO_CONSULTA~M_GET_MODEL.
+
+    r_model = o_model.
+
+  endmethod.
