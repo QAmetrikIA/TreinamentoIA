@@ -1,0 +1,3 @@
+  method M_SET_BASE64.
+    o_dao_ged001->v_base64 = i_base64.
+  endmethod.
