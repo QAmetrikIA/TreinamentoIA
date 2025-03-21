@@ -1,0 +1,53 @@
+  METHOD m_validar_dados.
+
+    LOOP AT ch_dados ASSIGNING FIELD-SYMBOL(<fsl_dados>).
+
+      DATA(vl_tabix) = sy-tabix.
+
+      CALL FUNCTION 'CONVERSION_EXIT_ALPHA_INPUT'
+        EXPORTING
+          input  = <fsl_dados>-ramo
+        IMPORTING
+          output = <fsl_dados>-ramo.
+
+      IF NOT ( strlen( <fsl_dados>-cnpj_pag ) = 14 OR strlen( <fsl_dados>-cnpj_pag ) = 18 ) OR NOT ( strlen( <fsl_dados>-cnpj_corr ) = 14 OR strlen( <fsl_dados>-cnpj_corr ) = 18 ).
+
+        m_adiciona_erro( i_mensagem = 'Dados nos Campos de CNPJ devem ter 14 ou 18 caracteres 14-CPF e 18-CNPJ.'(002)
+                         i_linha    = vl_tabix ).
+
+      ELSE.
+
+        m_formata_cnpj( CHANGING ch_cnpj = <fsl_dados>-cnpj_pag ).
+        m_formata_cnpj( CHANGING ch_cnpj = <fsl_dados>-cnpj_corr ).
+
+      ENDIF.
+
+      IF ( <fsl_dados>-fat_auto <> 'X' AND <fsl_dados>-fat_auto <> 'x' ) AND <fsl_dados>-fat_auto <> space.
+
+        m_adiciona_erro( i_mensagem = 'Automático permitir apenas X ou ''Vazio'''(003)
+                         i_linha    = vl_tabix ).
+
+      ELSE.
+
+        TRANSLATE <fsl_dados>-fat_auto TO UPPER CASE.
+
+      ENDIF.
+
+      IF <fsl_dados>-email(1) = space.
+        m_adiciona_erro( i_mensagem = 'E-mail não pode iniciar com ''Espaço'''(004)
+                         i_linha    = vl_tabix ).
+      ENDIF.
+
+      IF NOT ( <fsl_dados>-dia_fechamento >= 1 AND <fsl_dados>-dia_fechamento <= 31 ).
+        m_adiciona_erro( i_mensagem = 'Dia Fechamento dados válidos apenas de 1 a 31'(005)
+                         i_linha    = vl_tabix ).
+      ENDIF.
+
+      IF NOT <fsl_dados>-carrencia > 0.
+        m_adiciona_erro( i_mensagem = 'Carência deve ser superior a 0 (Zero)'(006)
+                         i_linha    = vl_tabix ).
+      ENDIF.
+
+    ENDLOOP.
+
+  ENDMETHOD.
