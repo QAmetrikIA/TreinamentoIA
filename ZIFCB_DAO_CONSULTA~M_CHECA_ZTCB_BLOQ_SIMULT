@@ -1,0 +1,24 @@
+M_CHECA_ZTCB_BLOQ_SIMULT
+    r_validacao = abap_true.
+
+    DATA(vl_cliente) = o_model->m_get_cliente( ).
+
+    DATA: wal_estrutura_campos TYPE ztcb_bloq_simult.
+    DATA: vl_campo TYPE string.
+
+    vl_campo = zcl_abap_utility=>m_definir_campos( wal_estrutura_campos ).
+
+    CHECK vl_campo IS NOT INITIAL.
+
+    CHECK vl_cliente IS NOT INITIAL.
+
+    SELECT SINGLE (vl_campo)
+      INTO wa_ztcb_bloq_simult
+      FROM ztcb_bloq_simult
+      WHERE cliente = vl_cliente.
+
+    CHECK sy-subrc IS INITIAL.
+
+    r_validacao = abap_false.
+
+  ENDMETHOD.
