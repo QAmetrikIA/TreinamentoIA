@@ -1,0 +1,40 @@
+  METHOD zifcb_dao_consulta~m_select_bkpf_st.
+
+    DATA itl_movimento_st TYPE zttbcb_movimento.
+    DATA: itl_bkpf TYPE zttbcb_bkpf.
+    DATA: wal_estrutura_campos TYPE zstbcb_bkpf.
+    DATA: vl_campo TYPE string.
+
+
+    DATA(itl_movimento) = o_dao_movto->m_get_movimento_table( ).
+
+    LOOP AT itl_movimento INTO DATA(wal_movimento).
+      IF wal_movimento-cb_pedido_bloqueio CP 'ST*'.
+
+        APPEND wal_movimento TO itl_movimento_st.
+
+      ENDIF.
+    ENDLOOP.
+
+
+    vl_campo = zcl_abap_utility=>m_definir_campos( wal_estrutura_campos ).
+
+    CHECK vl_campo IS NOT INITIAL AND itl_movimento_st IS NOT INITIAL.
+
+    SELECT (vl_campo)
+       FROM bkpf
+       INTO TABLE itl_bkpf
+         FOR ALL ENTRIES IN itl_movimento_st
+         WHERE bukrs     = itl_movimento_st-cb_empresa
+         AND   belnr     = itl_movimento_st-cb_doc_consumo
+         AND   gjahr     = itl_movimento_st-cb_ano_consumo
+         AND   blart     = 'CB'
+         AND   xreversal = abap_false.
+
+    IF sy-subrc IS INITIAL  .
+
+      o_model->m_set_bkpf( itl_bkpf ).
+
+    ENDIF.
+
+  ENDMETHOD. 
