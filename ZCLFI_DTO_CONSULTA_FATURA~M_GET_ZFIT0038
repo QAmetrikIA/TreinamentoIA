@@ -1,0 +1,3 @@
+  method M_GET_ZFIT0038.
+    r_return = o_dao_consulta_fatura->it_zfit0038.
+  endmethod.
