@@ -1,0 +1,8 @@
+  METHOD m_set_it_order_id.
+    o_dao->it_order_id = i_order_id.
+
+    SORT o_dao->it_order_id BY bukrs
+                               belnr
+                               gjahr.
+
+  ENDMETHOD.
