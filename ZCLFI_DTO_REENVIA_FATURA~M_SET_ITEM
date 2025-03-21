@@ -1,0 +1,3 @@
+  METHOD m_set_item.
+    o_dao->r_itens = r_itens.
+  ENDMETHOD.
