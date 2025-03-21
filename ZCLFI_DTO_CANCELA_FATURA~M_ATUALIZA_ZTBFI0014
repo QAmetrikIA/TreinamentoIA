@@ -1,0 +1,3 @@
+  method M_ATUALIZA_ZTBFI0014.
+    o_dao_cancela_fatura->m_atualiza_ztbfi0014( ).
+  endmethod.
