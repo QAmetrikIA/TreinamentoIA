@@ -1,0 +1,21 @@
+  METHOD m_executa_reenvio.
+
+    DATA: o_envia_legado TYPE REF TO zclfi_dto_envia_legado.
+    CREATE OBJECT o_envia_legado.
+
+
+    o_envia_legado->m_set_sistema('S4HANA').
+    o_envia_legado->m_set_step('ENVLEG').
+
+      IF o_dao->v_emiss IS NOT INITIAL.
+        o_envia_legado->m_set_interface('FI007_FAT').
+        o_envia_legado->m_set_table_idsap( it_idsap ).
+        o_envia_legado->m_enviar_legado( CHANGING ch_dados_integracao = it_envio_007
+                                                  ch_log  = it_log ).
+      ELSE.
+        o_envia_legado->m_set_interface('FI007_CANC').
+        o_envia_legado->m_enviar_legado( CHANGING ch_dados_integracao = it_envio
+                                                  ch_log  = it_log ).
+
+      ENDIF.
+  ENDMETHOD.
