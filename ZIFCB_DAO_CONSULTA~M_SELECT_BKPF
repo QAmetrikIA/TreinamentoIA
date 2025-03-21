@@ -1,0 +1,54 @@
+METHOD zifcb_dao_consulta~m_select_bkpf.
+
+    DATA: wal_estrutura_campos TYPE zstbcb_bkpf.
+
+    DATA: itl_bkpf TYPE zttbcb_bkpf.
+
+    DATA: vl_campo TYPE string.
+
+    DATA(vl_empresa) = o_model->m_get_empresa( ).
+
+    DATA(rl_data) = o_model->m_get_periodo( ).
+
+    vl_campo = zcl_abap_utility=>m_definir_campos( wal_estrutura_campos ).
+
+    CHECK vl_campo IS NOT INITIAL.
+
+    DATA(itl_dockey) = o_model->m_get_dockey( ).
+
+    IF itl_dockey IS INITIAL.
+
+      CHECK rl_data IS NOT INITIAL.
+
+      SELECT (vl_campo)
+      FROM bkpf
+      INTO TABLE itl_bkpf
+      WHERE bukrs     = vl_empresa
+      AND   blart     = 'CB'
+      AND   bldat    IN rl_data
+      AND   xreversal = abap_false.
+
+    ELSE.
+
+      SELECT (vl_campo)
+      FROM bkpf
+      INTO TABLE itl_bkpf
+        FOR ALL ENTRIES IN itl_dockey
+        WHERE bukrs     = itl_dockey-bukrs
+        AND   belnr     = itl_dockey-belnr
+        AND   gjahr     = itl_dockey-gjahr
+        AND   blart     = 'CB'
+        AND   xreversal = abap_false.
+
+    ENDIF.
+
+    IF sy-subrc IS INITIAL  .
+
+      o_model->m_set_bkpf( itl_bkpf ).
+
+
+    ENDIF.
+
+    r_retorno = abap_true.
+
+  ENDMETHOD.
