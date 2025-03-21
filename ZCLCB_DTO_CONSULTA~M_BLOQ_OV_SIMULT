@@ -1,0 +1,5 @@
+  method M_BLOQ_OV_SIMULT.
+
+    r_validacao = o_dao_consulta->m_bloq_ov_simult( i_bloq_sim ).
+
+  endmethod.
