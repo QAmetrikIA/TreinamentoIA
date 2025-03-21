@@ -1,0 +1,36 @@
+  METHOD m_monta_emails.
+
+    DATA: ol_prepara_email TYPE REF TO zclfi_prepara_email_faturament.
+    CREATE OBJECT ol_prepara_email.
+
+    DATA: itl_but021_fs  TYPE zttfi_but021_fs,
+          itl_0045_email TYPE zttfi_0045_email.
+
+    READ TABLE i_fatura_sint INTO DATA(wl_pagador) INDEX 1.
+    IF sy-subrc EQ 0.
+      ol_prepara_email->m_busca_dados_dest( EXPORTING i_fatura_sint = i_fatura_sint
+                                            IMPORTING e_0045_email  = itl_0045_email ).
+      SORT itl_0045_email BY ramo pagador corretor.
+
+      READ TABLE i_fatura_analit INTO DATA(wl_analitico) WITH KEY nrfatura = wl_pagador-nrfatura BINARY SEARCH.
+      IF sy-subrc EQ 0.
+
+        READ TABLE itl_0045_email INTO DATA(wl_0045_email) WITH KEY ramo = wl_analitico-prctr
+                                                                    pagador = wl_analitico-pagador
+                                                                    corretor = wl_analitico-corretor BINARY SEARCH.
+        IF sy-subrc IS NOT INITIAL.
+          READ TABLE itl_0045_email INTO wl_0045_email WITH KEY ramo = wl_analitico-prctr
+                                                      pagador = wl_analitico-pagador
+                                                      corretor = '' BINARY SEARCH.
+        ENDIF.
+        IF sy-subrc EQ 0.
+          SPLIT  wl_0045_email-email AT ';' INTO TABLE DATA(itl_data).
+          it_email_reenvio = VALUE #( FOR <fsl_data> IN itl_data ( email = <fsl_data>
+                                                                   nrfatura = wl_pagador-nrfatura ) ).
+        ENDIF.
+      ENDIF.
+      SORT it_email_reenvio BY email.
+      DELETE ADJACENT DUPLICATES FROM it_email_reenvio COMPARING email.
+      e_email_reenvio = it_email_reenvio.
+    ENDIF.
+  ENDMETHOD.
