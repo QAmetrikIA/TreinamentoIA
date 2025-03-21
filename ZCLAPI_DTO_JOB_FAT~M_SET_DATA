@@ -1,0 +1,3 @@
+  method M_SET_DATA.
+    o_dao_job_fat->v_data = i_data.
+  endmethod.
