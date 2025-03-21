@@ -1,0 +1,90 @@
+  METHOD m_atualizar_dados_zsdtb0002.
+
+    DATA: itl_key_02    TYPE zttfi_zsdtb0002,
+          itl_zsdtb0002 TYPE zttfi_zsdtb0002.
+
+    DATA: wl_ZSDTB0002  TYPE zsdtb0002.
+
+    DATA: vl_nrparc TYPE string,
+          vl_total  TYPE string.
+
+    CHECK it_zfit0038 IS NOT INITIAL.
+
+    SORT: it_zfit0046 BY nrfatura,
+          it_zfit0001 BY bukrs belnr gjahr.
+
+    LOOP AT it_zfit0038 INTO DATA(wl_0038).
+
+      wl_zsdtb0002-id_legado = wl_0038-zzid_legado.
+      APPEND wl_zsdtb0002 TO itl_key_02.
+
+    ENDLOOP.
+
+    IF itl_key_02 IS NOT INITIAL.
+
+      SELECT *
+        FROM zsdtb0002
+        INTO TABLE itl_zsdtb0002
+         FOR ALL ENTRIES IN itl_key_02
+       WHERE id_legado = itl_key_02-id_legado.
+      IF sy-subrc IS INITIAL.
+        SORT itl_zsdtb0002 BY id_legado nrparc.
+      ENDIF.
+
+    ENDIF.
+
+    CHECK itl_zsdtb0002 IS NOT INITIAL.
+
+    LOOP AT it_zfit0038 INTO wl_0038.
+
+      SPLIT wl_0038-nrparc AT '/' INTO vl_nrparc vl_total.
+
+      READ TABLE itl_zsdtb0002 ASSIGNING FIELD-SYMBOL(<fsl_0002>)
+        WITH KEY id_legado = wl_0038-zzid_legado
+                 nrparc    = vl_nrparc BINARY SEARCH.
+
+      CHECK sy-subrc IS INITIAL.
+
+      READ TABLE it_zfit0001 INTO DATA(wl_0001)
+        WITH KEY bukrs = wl_0038-bukrs
+                 belnr = wl_0038-belnr
+                 gjahr = wl_0038-gjahr BINARY SEARCH.
+      IF sy-subrc IS INITIAL.
+
+        <fsl_0002>-nrboleto      = wl_0001-nrboleto.
+        <fsl_0002>-juros         = wl_0001-vlr_juros.
+        <fsl_0002>-desconto      = wl_0001-vlr_desconto.
+        <fsl_0002>-inst_cobranca = wl_0001-inst_cobranca.
+        <fsl_0002>-id_boleto     = wl_0001-id_boleto.
+        <fsl_0002>-linha         = wl_0001-linha_dig.
+        <fsl_0002>-buzei         = wl_0001-buzei.
+        <fsl_0002>-id_legado_int = wl_0001-id_integracao.
+        <fsl_0002>-bankl         = wl_0001-bankl.
+        <fsl_0002>-bankk         = wl_0001-bankk.
+        <fsl_0002>-bankn         = wl_0001-bankn.
+        <fsl_0002>-bvtyp         = wl_0001-bvtyp.
+
+        <fsl_0002>-zlsch         = wl_0038-zlsch.
+        <fsl_0002>-nrfatura      = wl_0038-nrfatura.
+
+        READ TABLE it_zfit0046 INTO DATA(wl_0046)
+          WITH KEY nrfatura = wl_0038-nrfatura BINARY SEARCH.
+        IF sy-subrc IS INITIAL.
+
+          <fsl_0002>-guid_fatura  = wl_0046-guid_fatura.
+          <fsl_0002>-vlrboleto    = wl_0046-dmbtr.
+
+        ENDIF.
+      ENDIF.
+
+    ENDLOOP.
+
+    CHECK itl_zsdtb0002 IS NOT INITIAL.
+
+    MODIFY zsdtb0002 FROM TABLE itl_zsdtb0002.
+
+    IF sy-subrc IS INITIAL.
+      COMMIT WORK.
+    ENDIF.
+
+  ENDMETHOD.
