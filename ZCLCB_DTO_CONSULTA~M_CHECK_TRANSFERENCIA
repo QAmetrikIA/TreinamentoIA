@@ -1,0 +1,15 @@
+METHOD m_check_transferencia.
+
+    DATA: itl_vbeln TYPE edm_vbeln_range_tt.
+
+    APPEND VALUE edm_vbeln_range( sign = 'I'          option = 'BT'
+                                  low  = 'ST00000000' high   = 'ST99999999' ) TO itl_vbeln.
+
+    r_return = o_dao_consulta->m_valida_qtde_trans( EXPORTING   i_kunnr   = i_kunnr
+                                                                i_vbeln   = itl_vbeln
+
+            
+                                                    IMPORTING
+                                                                e_message = e_message ).
+        
+  ENDMETHOD.
