@@ -1,0 +1,22 @@
+METHOD zifcb_dao_consulta~m_modify_ztcb_bloq_simult.
+
+    r_validacao = abap_true.
+
+    DATA(vl_cliente) = o_model->m_get_cliente( ).
+
+    CHECK i_bloq_sim IS NOT INITIAL.
+
+    MODIFY ztcb_bloq_simult FROM i_bloq_sim.
+
+    CHECK sy-subrc IS INITIAL.
+
+    CALL FUNCTION 'BAPI_TRANSACTION_COMMIT'
+      EXPORTING
+        wait = 'X'.
+
+    CHECK sy-subrc IS INITIAL.
+
+    r_validacao = abap_false.
+
+
+  ENDMETHOD.
