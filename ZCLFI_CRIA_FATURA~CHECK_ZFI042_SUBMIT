@@ -1,0 +1,8 @@
+  METHOD check_zfi042_submit.
+
+    SELECT SINGLE low
+      FROM tvarvc
+      INTO rv_ok
+    WHERE name EQ 'ZFI042_STATUS_EMAIL'.
+
+  ENDMETHOD.
