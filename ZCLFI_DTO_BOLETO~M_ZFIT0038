@@ -1,0 +1,3 @@
+  method M_ZFIT0038.
+    o_dao->m_zfit0038( ).
+  endmethod.
