@@ -1,0 +1,3 @@
+  METHOD m_set_status_pagto.
+    o_dao_consulta_fatura->v_status_pagto = i_status_pagto.
+  ENDMETHOD.
