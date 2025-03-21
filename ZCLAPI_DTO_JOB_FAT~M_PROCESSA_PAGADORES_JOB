@@ -1,0 +1,30 @@
+  METHOD m_processa_pagadores_job.
+
+    READ TABLE o_dao_job_fat->it_ztbabap0004 INTO DATA(wl_etapa) WITH KEY parametro = 'QUANT_JOBS' BINARY SEARCH.
+    IF sy-subrc EQ 0.
+      LOOP AT o_dao_job_fat->it_zfit0045 ASSIGNING FIELD-SYMBOL(<fsl_0045>).
+
+        o_dao_job_fat->v_count_job += 1.
+
+        IF o_dao_job_fat->v_count_job > wl_etapa-valor.
+          o_dao_job_fat->m_monitora_jobs( EXPORTING i_monitor = 1
+                                                    i_njob =  CONV #( wl_etapa-valor ) ).
+        ENDIF.
+        m_submit_job_filho( <fsl_0045>-pagador ).
+
+
+      ENDLOOP.
+
+      o_dao_job_fat->m_monitora_jobs( EXPORTING i_monitor = 2 ).
+      m_atualiza_tabela_log( ).
+
+      SORT o_dao_job_fat->it_ztbfi0011 BY status_job.
+      READ TABLE o_dao_job_fat->it_ztbfi0011 INTO DATA(wl_0011) WITH KEY status_job = 'C' BINARY SEARCH.
+      IF sy-subrc NE 0.
+        READ TABLE o_dao_job_fat->it_ztbfi0011 INTO wl_0011 WITH KEY status_job = 'E' BINARY SEARCH.
+      ENDIF.
+      IF sy-subrc EQ 0.
+        m_envia_email( ).
+      ENDIF.
+    ENDIF.
+  ENDMETHOD.
