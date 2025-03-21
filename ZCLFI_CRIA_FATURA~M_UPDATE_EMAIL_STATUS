@@ -1,0 +1,42 @@
+  METHOD m_update_email_status.
+
+    SORT: it_ztbfi0004 BY nrfatura,
+          it_log BY nrfatura status status_email status_boleto,
+          it_submit_log BY nrfatura objtp objyr objno.
+
+    LOOP AT it_zfit0046 ASSIGNING FIELD-SYMBOL(<fsl_zfit0046>).
+      READ TABLE it_ztbfi0004 INTO DATA(wl_ztbfi0004) WITH KEY nrfatura = <fsl_zfit0046>-nrfatura BINARY SEARCH.
+      IF sy-subrc EQ 0.
+        LOOP AT it_ztbfi0004 INTO DATA(wl_ztbfi0004_aux) FROM sy-tabix .
+          IF wl_ztbfi0004_aux-nrfatura EQ <fsl_zfit0046>-nrfatura.
+            READ TABLE it_submit_log INTO DATA(wl_sost) WITH KEY objtp = wl_ztbfi0004_aux-objtp
+                                                                 objyr = wl_ztbfi0004_aux-objyr
+                                                                 objno = wl_ztbfi0004_aux-objno BINARY SEARCH.
+            IF sy-subrc EQ 0.
+              <fsl_zfit0046>-status_email = wl_sost-new_status.
+            ENDIF.
+          ELSE.
+            EXIT.
+          ENDIF.
+        ENDLOOP.
+      ENDIF.
+
+      READ TABLE it_log ASSIGNING FIELD-SYMBOL(<lfs_log>)
+                        WITH KEY nrfatura      = <fsl_zfit0046>-nrfatura
+                                 status        = <fsl_zfit0046>-status
+                                 status_email  = <fsl_zfit0046>-status_email
+                                 status_boleto = <fsl_zfit0046>-status_boleto BINARY SEARCH.
+      IF sy-subrc = 0.
+        <lfs_log>-status_email = <fsl_zfit0046>-status_email.
+      ELSE.
+        APPEND INITIAL LINE TO it_log ASSIGNING <lfs_log>.
+        CONCATENATE 'Fatura' <fsl_zfit0046>-nrfatura 'criada com sucesso.' INTO
+        <lfs_log>-mensagem SEPARATED BY space.
+        <lfs_log>-nrfatura      = <fsl_zfit0046>-nrfatura.
+        <lfs_log>-status        = <fsl_zfit0046>-status.
+        <lfs_log>-status_email  = <fsl_zfit0046>-status_email.
+        <lfs_log>-status_boleto = <fsl_zfit0046>-status_boleto.
+      ENDIF.
+    ENDLOOP.
+
+  ENDMETHOD.
