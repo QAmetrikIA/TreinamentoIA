@@ -1,0 +1,3 @@
+  method M_GET_MENSAGEM.
+     r_return = o_mensagem.
+  endmethod.
