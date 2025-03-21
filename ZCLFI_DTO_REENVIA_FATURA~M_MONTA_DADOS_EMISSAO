@@ -1,0 +1,202 @@
+  METHOD m_monta_dados_emissao.
+
+    DATA: wl_envio_007     TYPE zstfi_fi007_return.
+    DATA: wl_envio_prop    TYPE zstfi_fi007_return_data_prop.
+    DATA: wl_idsap         TYPE zstfi_id_sap_fatura.
+    DATA: wl_alv           TYPE zstfi_alv_reenvio_emiss_fatura.
+    DATA: vl_modify_38     TYPE char1.
+    DATA: vl_modify_46     TYPE char1.
+    DATA: vl_modify_01     TYPE char1.
+
+    SORT o_dao->it_zfit0046 BY pagador
+                               bukrs
+                               prctr
+                               qb_corretor
+                               dia_fech
+                               dta_fech_div
+                               carencia
+                               dta_venc_div
+                               nrfatura.
+    SORT o_dao->it_zfit0001 BY bukrs
+                               belnr
+                               gjahr.
+    SORT o_dao->it_ztbint003 BY id_sap dtinc hrinc DESCENDING.
+
+
+    LOOP AT o_dao->it_zfit0046 ASSIGNING FIELD-SYMBOL(<fsl_0046>).
+      READ TABLE o_dao->it_zfit0038 ASSIGNING FIELD-SYMBOL(<fsl_0038_aux>) WITH KEY pagador         = <fsl_0046>-pagador
+                                                                                    bukrs           = <fsl_0046>-bukrs
+                                                                                    prctr           = <fsl_0046>-prctr
+                                                                                    qb_corretor     = <fsl_0046>-qb_corretor
+                                                                                    dia_fech        = <fsl_0046>-dia_fech
+                                                                                    dta_fech_div    = <fsl_0046>-dta_fech_div
+                                                                                    carencia        = <fsl_0046>-carencia
+                                                                                    dta_venc_div    = <fsl_0046>-dta_venc_div
+                                                                                    nrfatura        = <fsl_0046>-nrfatura BINARY SEARCH.
+
+
+      IF sy-subrc EQ 0.
+        DATA(vl_lines) = REDUCE i( INIT i = 0 FOR wa IN o_dao->it_zfit0038 WHERE ( nrfatura EQ <fsl_0046>-nrfatura ) NEXT i = i + 1 ).
+        LOOP AT o_dao->it_zfit0038 ASSIGNING FIELD-SYMBOL(<fsl_0038>) FROM sy-tabix.
+          IF    <fsl_0038_aux>-pagador EQ <fsl_0038>-pagador
+           AND <fsl_0038_aux>-bukrs   EQ <fsl_0038>-bukrs
+           AND <fsl_0038_aux>-prctr   EQ <fsl_0038>-prctr
+           AND <fsl_0038_aux>-qb_corretor EQ <fsl_0038>-qb_corretor
+           AND <fsl_0038_aux>-dia_fech    EQ <fsl_0038>-dia_fech
+           AND <fsl_0038_aux>-dta_fech_div = <fsl_0038>-dta_fech_div
+           AND <fsl_0038_aux>-carencia = <fsl_0038>-carencia
+           AND <fsl_0038_aux>-dta_venc_div = <fsl_0038>-dta_venc_div
+            AND <fsl_0038_aux>-nrfatura = <fsl_0038>-nrfatura.
+
+            CLEAR: wl_envio_prop, wl_envio_007, wl_alv.
+            IF  <fsl_0038>-status NE 'GE'.
+              r_erro = abap_true.
+              EXIT.
+            ENDIF.
+            "Reenviar, mesmo com sucesso
+            IF o_dao->v_reenv IS INITIAL AND o_dao->v_send IS NOT INITIAL.
+              CONCATENATE <fsl_0038>-nrfatura '-' <fsl_0038>-bukrs <fsl_0038>-belnr <fsl_0038>-gjahr INTO DATA(vl_id_sap).
+              READ TABLE o_dao->it_ztbint003 INTO DATA(wl_003) WITH KEY id_sap = vl_id_sap BINARY SEARCH.
+
+              IF sy-subrc EQ 0 AND wl_003-status = 'S'.
+                CONTINUE.
+              ENDIF.
+            ENDIF.
+
+            CLEAR wl_envio_007-_propostas.
+
+            wl_idsap-nrfatura       = <fsl_0038>-nrfatura.
+            wl_idsap-id_sap         = wl_idsap-nrfatura && '-' && <fsl_0038>-bukrs && <fsl_0038>-belnr && <fsl_0038>-gjahr.
+            IF <fsl_0038>-item_parcelas IS INITIAL.
+              vl_modify_38 = abap_true.
+              wl_idsap-item_parcelas  = <fsl_0038>-item_parcelas = wl_idsap-item_parcelas  + 1.
+              "caso tenha ocorrido erro na geração do JSON inicial, este campo não é salvo, pois ele é preenchido no momento do envio de dados
+            ELSE.
+              wl_idsap-item_parcelas  = <fsl_0038>-item_parcelas.
+            ENDIF.
+            APPEND wl_idsap TO it_idsap.
+
+            wl_envio_007-_qnt_parcelas  = vl_lines.
+            wl_envio_007-_item_parcelas = <fsl_0038>-item_parcelas.
+
+            IF <fsl_0038>-zzid_integracao IS INITIAL.
+              vl_modify_38 = abap_true.
+              wl_envio_007-_idintegracao  = <fsl_0038>-zzid_integracao = zclapi_gerar_guid36=>m_executar( ).
+            ELSE.
+              wl_envio_007-_idintegracao  = <fsl_0038>-zzid_integracao.
+            ENDIF.
+
+            wl_envio_007-_dt_criacao    = zclapi_date_time=>m_convert_datetime_timestamp( i_date = <fsl_0046>-criado_em
+                                                                                          i_time = <fsl_0046>-criado_hora ).
+            wl_envio_007-_boleto-_vlrboleto = <fsl_0046>-dmbtr.
+
+            IF <fsl_0046>-guid_fatura IS INITIAL.
+              vl_modify_46 = abap_true.
+              wl_envio_007-_boleto-_guid_fatura = <fsl_0046>-guid_fatura = zclapi_gerar_guid36=>m_executar( ).
+            ELSE.
+              wl_envio_007-_boleto-_guid_fatura = <fsl_0046>-guid_fatura.
+            ENDIF.
+
+            IF <fsl_0046>-id_integracao IS INITIAL.
+              vl_modify_46 = abap_true.
+              <fsl_0046>-id_integracao = <fsl_0038>-zzid_integracao.
+            ENDIF.
+
+
+            IF <fsl_0046>-id_instrucao IS INITIAL.
+              vl_modify_46 = abap_true.
+              wl_envio_007-_idinstrucao   = <fsl_0046>-id_instrucao = c_inst.
+            ELSE.
+              wl_envio_007-_idinstrucao = <fsl_0046>-id_instrucao.
+            ENDIF.
+
+
+            READ TABLE o_dao->it_zfit0001 ASSIGNING FIELD-SYMBOL(<fsl_0001>) WITH KEY bukrs = <fsl_0038>-bukrs
+                                                                      belnr = <fsl_0038>-belnr
+                                                                      gjahr = <fsl_0038>-gjahr BINARY SEARCH.
+
+            IF sy-subrc EQ 0.
+              IF <fsl_0001>-guid_fatura IS INITIAL.
+                vl_modify_01 = abap_true.
+                <fsl_0001>-guid_fatura = wl_envio_007-_boleto-_guid_fatura.
+              ENDIF.
+
+
+              wl_envio_007-_boleto-_nrboleto      = <fsl_0001>-nrboleto.
+              wl_envio_007-_boleto-_linha_dig     = <fsl_0001>-linha_dig.
+              wl_envio_007-_boleto-_juros         = <fsl_0001>-vlr_juros.
+              wl_envio_007-_boleto-_desconto      = <fsl_0001>-vlr_desconto.
+              wl_envio_007-_boleto-_guid_boleto   = <fsl_0001>-id_boleto.
+              wl_envio_007-_boleto-_banco         = <fsl_0001>-bankl.
+              wl_envio_007-_boleto-_dt_vencto     = <fsl_0001>-dt_vencto.
+              wl_envio_007-_boleto-_nrfatura      = <fsl_0001>-nrfatura.
+              wl_envio_007-_boleto-_inst_cobranca = <fsl_0001>-inst_cobranca.
+            ENDIF.
+
+            SPLIT <fsl_0038>-nrparc AT '/' INTO DATA(vl_var1) DATA(vl_var2).
+            wl_envio_prop-_nr_parcela  = vl_var1.
+            wl_envio_prop-_vlr_parcela = <fsl_0038>-dmbtr.
+            wl_envio_prop-_id_legado   = <fsl_0038>-zzid_legado.
+            APPEND wl_envio_prop TO wl_envio_007-_propostas.
+
+
+
+
+            "Se a opção de alv estiver marcada
+            IF o_dao->v_alv IS NOT INITIAL.
+              MOVE-CORRESPONDING wl_envio_007 TO wl_alv.
+              MOVE-CORRESPONDING wl_envio_007-_boleto TO wl_alv.
+              MOVE-CORRESPONDING wl_envio_prop TO wl_alv.
+              APPEND wl_alv TO it_alv_emiss.
+            ELSE.
+              APPEND wl_envio_007 TO it_envio_007.
+            ENDIF.
+          ELSE.
+            CLEAR: wl_idsap.
+            EXIT.
+          ENDIF.
+        ENDLOOP.
+      ENDIF.
+    ENDLOOP.
+
+    IF o_dao->r_itens IS NOT INITIAL.
+      DELETE it_alv_emiss WHERE _item_parcelas NOT IN o_dao->r_itens.
+      DELETE it_envio_007 WHERE _item_parcelas NOT IN o_dao->r_itens.
+    ENDIF.
+
+    IF o_dao->r_idleg IS NOT INITIAL.
+      DELETE it_alv_emiss WHERE _id_legado NOT IN o_dao->r_idleg.
+
+      LOOP AT it_envio_007 INTO DATA(wl_envio).
+        DATA(vl_tabix) = sy-tabix.
+        READ TABLE wl_envio-_propostas INTO DATA(wl_prop) INDEX 1.
+        IF wl_prop-_id_legado NOT IN o_dao->r_idleg.
+          DELETE it_envio_007 INDEX vl_tabix.
+        ENDIF.
+      ENDLOOP.
+    ENDIF.
+
+    IF o_dao->r_parc IS NOT INITIAL.
+      DELETE it_alv_emiss WHERE _nr_parcela NOT IN o_dao->r_parc.
+
+      LOOP AT it_envio_007 INTO wl_envio.
+        vl_tabix = sy-tabix.
+        READ TABLE wl_envio-_propostas INTO wl_prop INDEX 1.
+        IF wl_prop-_nr_parcela NOT IN o_dao->r_parc.
+          DELETE it_envio_007 INDEX vl_tabix.
+        ENDIF.
+      ENDLOOP.
+    ENDIF.
+
+
+    IF vl_modify_38 IS NOT INITIAL AND o_dao->v_send IS NOT INITIAL.
+      o_dao->m_modifica_zfit0038( ).
+    ENDIF.
+    IF vl_modify_46 IS NOT INITIAL AND o_dao->v_send IS NOT INITIAL.
+      o_dao->m_modifica_zfit0046( ).
+    ENDIF.
+    IF vl_modify_01 IS NOT INITIAL AND o_dao->v_send IS NOT INITIAL.
+      o_dao->m_modifica_zfit0001( ).
+    ENDIF.
+
+  ENDMETHOD.
