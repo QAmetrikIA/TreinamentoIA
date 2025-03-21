@@ -1,0 +1,31 @@
+METHOD m_consultar_movto.
+
+    DATA itl_dockey TYPE zttcb_dockey.
+
+    DATA wal_dockey TYPE zscb_dockey.
+
+    DATA ol_modelo TYPE REF TO zclcb_model_consulta.
+
+    ol_modelo = o_dao_consulta->m_get_model( ).
+
+    DATA(itl_bseg) = ol_modelo->m_get_bseg( ).
+
+    LOOP AT itl_bseg ASSIGNING FIELD-SYMBOL(<fsl_bseg>).
+
+      CLEAR wal_dockey.
+
+      wal_dockey-belnr = <fsl_bseg>-belnr.
+      wal_dockey-bukrs = <fsl_bseg>-bukrs.
+      wal_dockey-gjahr = <fsl_bseg>-gjahr.
+      wal_dockey-kunnr = <fsl_bseg>-kunnr.
+
+      APPEND wal_dockey TO itl_dockey.
+
+    ENDLOOP.
+
+    o_dao_movto->m_set_dockey( itl_dockey ).
+    o_dao_movto->m_select_ztcb_movimento_table( ).
+
+    r_retorno = abap_true.
+
+  ENDMETHOD.
