@@ -1,0 +1,42 @@
+METHOD zifcb_dao_consulta~m_select_historico.
+
+    DATA: itl_movimento_st TYPE zttbcb_movimento,
+          itl_bkpf         TYPE zttbcb_bkpf,
+          itl_historico TYPE zttcb_historico.
+
+    DATA: wal_estrutura_campos TYPE ztcb_historico.
+
+    DATA: vl_campo TYPE string.
+
+    DATA(itl_movimento) = o_dao_movto->m_get_movimento_table( ).
+
+    LOOP AT itl_movimento INTO DATA(wal_movimento).
+      IF wal_movimento-cb_pedido_bloqueio CP 'ST*'.
+
+        APPEND wal_movimento TO itl_movimento_st.
+
+      ENDIF.
+    ENDLOOP.
+
+    DATA(vl_empresa) = o_model->m_get_empresa( ).
+    DATA(vl_cliente) = o_model->m_get_cliente( ).
+    DATA(vl_data)    = o_model->m_get_periodo( ).
+
+    vl_campo = zcl_abap_utility=>m_definir_campos( wal_estrutura_campos ).
+
+    CHECK vl_campo IS NOT INITIAL.
+
+    SELECT (vl_campo)
+          FROM ztcb_historico
+          INTO TABLE itl_historico
+          WHERE empresa = vl_empresa
+          AND   cliente = vl_cliente.
+
+
+    IF sy-subrc IS INITIAL  .
+
+      o_model->m_set_historico( itl_historico ).
+
+    ENDIF.
+
+  ENDMETHOD. 
