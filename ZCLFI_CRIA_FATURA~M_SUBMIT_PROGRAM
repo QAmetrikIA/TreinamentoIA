@@ -1,0 +1,43 @@
+  METHOD m_submit_program.
+    DATA: it_data TYPE RANGE OF sy-datum.
+    FIELD-SYMBOLS <lfs_data> TYPE ltty_log .
+
+    CHECK me->it_ztbfi0004 IS NOT INITIAL.
+
+    cl_salv_bs_runtime_info=>set(
+      EXPORTING
+        display = abap_false
+        metadata = abap_true
+        data     = abap_true
+              ).
+
+    DATA(it_nrfatura) = m_submit_range( ).
+    it_data = VALUE #( ( sign = 'I'
+                        option = 'EQ'
+                        low = sy-datum ) ).
+
+
+    SUBMIT zfir042 WITH s_fatura IN it_nrfatura
+                   WITH s_data IN it_data
+                   WITH p_call EQ abap_true
+                   AND RETURN.
+
+    TRY.
+        cl_salv_bs_runtime_info=>get_data_ref(
+          IMPORTING
+            r_data = DATA(lr_data)
+            ).
+
+        cl_salv_bs_runtime_info=>clear_all( ).
+
+      CATCH cx_salv_bs_sc_runtime_info.
+    ENDTRY.
+
+    IF lr_data IS BOUND.
+      ASSIGN lr_data->* TO <lfs_data>.
+
+      IF <lfs_data> IS ASSIGNED.
+        me->it_submit_log = <lfs_data>.
+      ENDIF.
+    ENDIF.
+  ENDMETHOD.
