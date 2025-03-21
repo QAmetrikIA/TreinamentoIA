@@ -1,0 +1,3 @@
+  METHOD m_set_pagador.
+    o_dao_consulta_fatura->v_pagador  = i_cod_cliente.
+  ENDMETHOD.
