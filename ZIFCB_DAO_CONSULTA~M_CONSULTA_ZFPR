@@ -1,0 +1,5 @@
+METHOD zifcb_dao_consulta~m_consulta_zfpr.
+
+    m_select_ztcb_controle_zf( ).
+
+  ENDMETHOD.
