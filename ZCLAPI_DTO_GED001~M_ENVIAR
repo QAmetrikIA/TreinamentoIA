@@ -1,0 +1,3 @@
+  method M_ENVIAR.
+        o_dao_ged001->m_send( ).
+  endmethod.
