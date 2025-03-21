@@ -1,0 +1,3 @@
+  method M_GET_LOG.
+    r_log = o_dao_cancela_fatura->it_log.
+  endmethod.
