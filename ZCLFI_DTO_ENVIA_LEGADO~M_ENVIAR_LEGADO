@@ -1,0 +1,6 @@
+  METHOD m_enviar_legado.
+
+    o_envia_legado->m_send( CHANGING ch_dados_integracao = ch_dados_integracao
+                                     ch_log = ch_log ).
+
+  ENDMETHOD.
