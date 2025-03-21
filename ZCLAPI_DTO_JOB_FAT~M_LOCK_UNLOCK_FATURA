@@ -1,0 +1,8 @@
+  METHOD m_lock_unlock_fatura.
+  r_subrc =  o_dao_job_fat->m_lock_unlock_fatura( EXPORTING i_lock    = i_lock 
+                                                            i_report  = i_report
+                                                            i_variant = i_variant
+                                                  IMPORTING e_msgid   = e_msgid
+                                                            e_msgno   = e_msgno
+                                                            e_message = e_message ).
+  ENDMETHOD.
