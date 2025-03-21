@@ -1,0 +1,123 @@
+  METHOD m_grava_zfit0045.
+    DATA: vl_erro TYPE char1.
+
+    LOOP AT i_dados INTO DATA(wl_dados).
+      CLEAR vl_erro.
+      DATA(vl_tabix) = sy-tabix.
+
+      CALL FUNCTION 'CONVERSION_EXIT_ALPHA_INPUT'
+        EXPORTING
+          input  = wl_dados-ramo
+        IMPORTING
+          output = wl_dados-ramo.
+
+      IF NOT ( strlen( wl_dados-cnpj_pag ) = 14 OR strlen( wl_dados-cnpj_pag ) = 18 )." OR NOT ( strlen( wl_dados-cnpj_corr ) = 14 OR strlen( wl_dados-cnpj_corr ) = 18 ).
+
+        m_adiciona_erro( i_mensagem = 'Dados nos Campos de CNPJ devem ter 14 ou 18 caracteres 14-CPF e 18-CNPJ'(002) && | | && wl_dados-cnpj_pag
+                         i_linha    = vl_tabix ).
+
+        vl_erro = abap_true.
+
+      ELSE.
+
+        m_formata_cnpj( CHANGING ch_cnpj = wl_dados-cnpj_pag ).
+
+      ENDIF.
+
+      IF wl_dados-cnpj_corr IS NOT INITIAL.
+        IF NOT ( strlen( wl_dados-cnpj_corr ) = 14 OR strlen( wl_dados-cnpj_corr ) = 18 ).
+
+          m_adiciona_erro( i_mensagem = 'Dados nos Campos de CNPJ devem ter 14 ou 18 caracteres 14-CPF e 18-CNPJ'(002) && | | && wl_dados-cnpj_corr
+                           i_linha    = vl_tabix ).
+
+          vl_erro = abap_true.
+
+        ELSE.
+
+          m_formata_cnpj( CHANGING ch_cnpj = wl_dados-cnpj_corr ).
+
+        ENDIF.
+      ENDIF.
+
+      IF ( wl_dados-fat_auto <> 'X' AND wl_dados-fat_auto <> 'x' ) AND wl_dados-fat_auto <> space.
+
+        m_adiciona_erro( i_mensagem = 'Automático permitir apenas X ou ''Vazio'''(003)
+                         i_linha    = vl_tabix ).
+
+        vl_erro = abap_true.
+
+      ELSE.
+
+        TRANSLATE wl_dados-fat_auto TO UPPER CASE.
+
+      ENDIF.
+
+      CONDENSE wl_dados-email NO-GAPS.
+      SEARCH wl_dados-email FOR '/'.
+      IF sy-subrc EQ 0.
+        m_adiciona_erro( i_mensagem = 'Identificado o caracter barra "/" no email, validar dado'(013)
+                         i_linha    = vl_tabix ).
+
+        vl_erro = abap_true.
+      ENDIF.
+
+      IF NOT ( wl_dados-dia_fechamento >= 1 AND wl_dados-dia_fechamento <= 31 ).
+        m_adiciona_erro( i_mensagem = 'Dia Fechamento dados válidos apenas de 1 a 31'(005)
+                         i_linha    = vl_tabix ).
+
+        vl_erro = abap_true.
+      ENDIF.
+
+      IF NOT wl_dados-carrencia > 0.
+        m_adiciona_erro( i_mensagem = 'Carência deve ser superior a 0 (Zero)'(006)
+                         i_linha    = vl_tabix ).
+
+        vl_erro = abap_true.
+      ENDIF.
+
+
+      DATA(wl_dados_pag) = m_get_complemento( EXPORTING i_complemento = i_complemento
+                                                        i_cnpj        = wl_dados-cnpj_pag
+                                                        i_linha       = vl_tabix
+                                              IMPORTING e_erro        = vl_erro ).
+
+      IF wl_dados-cnpj_corr IS NOT INITIAL. "corretor é opcional, podendo ficar em branco
+        DATA(wl_dados_corr) = m_get_complemento( EXPORTING i_complemento = i_complemento
+                                                           i_cnpj        = wl_dados-cnpj_corr
+                                                           i_linha       = vl_tabix
+                                                 IMPORTING e_erro        = vl_erro ).
+      ENDIF.
+
+      READ TABLE i_centro_lucro INTO DATA(wl_centro_lucro) WITH KEY prctr = wl_dados-ramo BINARY SEARCH.
+
+      IF sy-subrc IS NOT INITIAL.
+        m_adiciona_erro( i_mensagem = 'Centro de lucro'(011) && | | && wl_dados-ramo && | | && 'não cadastrado'(012)
+                         i_linha    = vl_tabix ).
+
+        vl_erro = abap_true.
+      ENDIF.
+
+
+      IF vl_erro = abap_false.
+        APPEND INITIAL LINE TO it_zfit0045 ASSIGNING FIELD-SYMBOL(<fsl_zfit0045>).
+
+        <fsl_zfit0045>-ramo      = wl_dados-ramo.
+        <fsl_zfit0045>-desc_ramo = wl_centro_lucro-ltext.
+        <fsl_zfit0045>-cnpj      = wl_dados_pag-taxnum.
+        <fsl_zfit0045>-pagador   = wl_dados_pag-partner.
+        <fsl_zfit0045>-nome_pag  = m_monta_nome( wl_dados_pag ).
+        <fsl_zfit0045>-cnpj_corr = wl_dados_corr-taxnum.
+        <fsl_zfit0045>-corretor  = wl_dados_corr-partner.
+        <fsl_zfit0045>-nome_corr = m_monta_nome( wl_dados_corr ).
+        <fsl_zfit0045>-dia_fech  = wl_dados-dia_fechamento.
+        <fsl_zfit0045>-carencia  = wl_dados-carrencia.
+        <fsl_zfit0045>-email     = wl_dados-email.
+        <fsl_zfit0045>-fat_auto  = wl_dados-fat_auto.
+
+        UNASSIGN <fsl_zfit0045>.
+      ENDIF.
+    ENDLOOP.
+
+    o_dao->m_update_zfit0045( it_zfit0045 ).
+
+  ENDMETHOD.
