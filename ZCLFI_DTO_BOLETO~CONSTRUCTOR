@@ -1,0 +1,9 @@
+  METHOD constructor.
+
+    IF i_dao IS INITIAL.
+      CREATE OBJECT o_dao TYPE zclfi_dao_boleto.
+    ELSE.
+      o_dao = i_dao.
+    ENDIF.
+
+  ENDMETHOD.
