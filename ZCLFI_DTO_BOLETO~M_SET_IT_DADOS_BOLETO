@@ -1,0 +1,5 @@
+  METHOD m_set_it_dados_boleto.
+    o_dao->it_dados_boleto = i_dados_boleto.
+
+    SORT o_dao->it_dados_boleto BY _order_id.
+  ENDMETHOD.
