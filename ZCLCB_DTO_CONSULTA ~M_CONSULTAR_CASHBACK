@@ -1,0 +1,17 @@
+  METHOD m_consultar_cashback.
+
+    o_dao_consulta->m_consultar_saldo( ).
+    m_montar_saldo( ).
+
+    IF i_tp_consulta EQ 'E'.
+
+      o_dao_consulta->m_consultar_extrato( ).
+      m_consultar_movto( ).
+      m_consultar_contab_erros( ).
+      m_montar_extrato( ).
+
+    ENDIF.
+
+    r_retorno = abap_true.
+
+  ENDMETHOD.
