@@ -1,0 +1,3 @@
+  METHOD m_set_idleg.
+    o_dao->r_idleg = r_idleg.
+  ENDMETHOD.
