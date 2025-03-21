@@ -1,0 +1,20 @@
+  METHOD m_executar.
+
+    CREATE OBJECT o_mensagem.
+
+    m_monta_dados( ).
+    m_seleciona_sost( ).
+    m_salva_dados_sint( ).
+    m_salva_dados_anal( ).
+    m_commit( ).
+
+    m_sel_zfit0001( ).
+    m_atualizar_dados_zsdtb0002( ).
+    m_envia_legado( ).
+
+    m_atualizar_dados_zfit0001( ).
+    m_atualizar_dados_sint( ).
+    m_atualizar_dados_anal( ).
+    m_change_email_status( ).
+
+  ENDMETHOD.
