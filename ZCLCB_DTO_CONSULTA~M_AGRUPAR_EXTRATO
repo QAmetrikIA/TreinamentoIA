@@ -1,0 +1,29 @@
+  METHOD m_agrupar_extrato.
+
+    DATA itl_extrato_agrupa TYPE zttbcb_extrato_comp.
+    DATA(itl_extrato_comp) = i_extrato_comp.
+    DATA vl_cputm TYPE cputm.
+
+    r_return = abap_true.
+
+    SORT itl_extrato_comp BY shkzg ASCENDING.
+
+    LOOP AT itl_extrato_comp INTO DATA(wal_extrato_comp) WHERE ov = i_extrato-ov.
+
+      IF wal_extrato_comp-shkzg = 'H' AND vl_cputm < wal_extrato_comp-cputm.
+
+        vl_cputm = wal_extrato_comp-cputm.
+
+      ENDIF.
+
+      APPEND wal_extrato_comp TO itl_extrato_agrupa.
+
+    ENDLOOP.
+
+    SORT itl_extrato_agrupa DESCENDING BY budat cputm.
+
+    MOVE-CORRESPONDING itl_extrato_agrupa TO i_extrato_agrupa KEEPING TARGET LINES.
+
+    r_return = abap_false.
+
+  ENDMETHOD.
