@@ -1,0 +1,31 @@
+  METHOD m_atualizar_dados_anal.
+
+    DATA vl_modify TYPE abap_bool.
+
+    CHECK it_compl_anal IS NOT INITIAL.
+
+    LOOP AT it_zfit0038 ASSIGNING FIELD-SYMBOL(<fsl_0038>).
+
+      READ TABLE it_compl_anal INTO DATA(wl_compl)
+        WITH TABLE KEY nrfatura = <fsl_0038>-nrfatura
+                       bukrs    = <fsl_0038>-bukrs
+                       belnr    = <fsl_0038>-belnr
+                       gjahr    = <fsl_0038>-gjahr .
+
+      IF sy-subrc IS INITIAL.
+        <fsl_0038>-zzid_integracao = wl_compl-id_integracao.
+        <fsl_0038>-item_parcelas   = wl_compl-item_parcelas.
+
+        vl_modify = abap_true.
+      ENDIF.
+    ENDLOOP.
+
+    CHECK vl_modify = abap_true.
+
+    MODIFY zfit0038 FROM TABLE it_zfit0038.
+
+    IF sy-subrc IS INITIAL.
+      COMMIT WORK.
+    ENDIF.
+
+  ENDMETHOD.
