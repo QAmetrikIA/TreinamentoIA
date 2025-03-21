@@ -1,0 +1,15 @@
+  METHOD m_update.
+
+    IF v_etapa EQ 'CANCBOL'.
+
+      m_canc_boleto( ).
+      o_dao->m_input( ).
+
+    ELSE.
+      o_dao->it_zfit0001 = m_build_zfit0001( ).
+      o_dao->it_ztbfi0003 = m_build_0003( ).
+      o_dao->m_input( ).
+
+    ENDIF.
+
+  ENDMETHOD.
