@@ -1,0 +1,3 @@
+  METHOD m_set_parc.
+    o_dao->r_parc = r_parc.
+  ENDMETHOD.
