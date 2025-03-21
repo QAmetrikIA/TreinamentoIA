@@ -1,0 +1,43 @@
+  METHOD constructor.
+
+    DATA: rl_objeto TYPE zrttabap_objeto,
+          rl_param  TYPE zrttabap_param_name,
+          itl_valor TYPE zttbabap_ztbabap0003.
+    CLEAR v_app_extrato.
+
+    rl_objeto = VALUE #( ( sign   = 'I' option = 'EQ' low    = 'CASHBACK' ) ).
+
+    rl_param = VALUE #( ( sign   = 'I' option = 'EQ' low    = 'FM_PERFORMANCE_EXT' ) ).
+
+    zcl_abap_utility=>m_buscar_param_obj( EXPORTING i_objeto = rl_objeto i_param = rl_param IMPORTING e_valor =  itl_valor ).
+    READ TABLE itl_valor WITH KEY valor = sy-cprog INTO DATA(wal_valor).
+    IF sy-subrc = 0.
+      v_app_extrato =  wal_valor-valor.
+    ENDIF.
+
+    IF i_dao IS NOT INITIAL.
+
+      o_dao_consulta = i_dao.
+
+    ELSE.
+
+      CREATE OBJECT o_dao_consulta TYPE zclcb_dao_consulta EXPORTING i_app_extrato = v_app_extrato.
+
+    ENDIF.
+
+    IF i_dao_movto IS NOT INITIAL.
+
+      o_dao_movto = i_dao_movto.
+
+    ELSE.
+
+      CREATE OBJECT o_dao_movto TYPE zclcb_dao_movimento.
+
+    ENDIF.
+
+    SELECT tp_cashback idioma descricao
+        FROM ztcb_tp_cashback
+        INTO TABLE it_tipo_cashback
+        WHERE idioma = sy-langu.
+
+  ENDMETHOD.
