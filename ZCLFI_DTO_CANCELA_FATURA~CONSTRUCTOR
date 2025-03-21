@@ -1,0 +1,8 @@
+  METHOD constructor.
+    IF i_dao_cancela_fatura IS INITIAL.
+      CREATE OBJECT o_dao_cancela_fatura TYPE zclfi_dao_cancela_fatura.
+    ELSE.
+      o_dao_cancela_fatura = i_dao_cancela_fatura.
+    ENDIF.
+
+  ENDMETHOD.
