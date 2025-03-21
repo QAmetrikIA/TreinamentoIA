@@ -1,0 +1,3 @@
+  METHOD m_set_id_sap.
+    o_dao_ged001->v_id_sap = i_id_sap.
+  ENDMETHOD.
