@@ -1,0 +1,5 @@
+  METHOD m_get_erros.
+
+    r_erros = it_erros.
+
+  ENDMETHOD.
