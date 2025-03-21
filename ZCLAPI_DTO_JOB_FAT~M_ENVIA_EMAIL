@@ -1,0 +1,82 @@
+  METHOD m_envia_email.
+    DATA: itl_lines TYPE tline_t.
+
+    DATA: vl_id       TYPE thead-tdid,
+          vl_language TYPE thead-tdspras,
+          vl_name     TYPE thead-tdname,
+          vl_object   TYPE thead-tdobject,
+          vl_line     TYPE string,
+          vl_nome     TYPE string.
+
+    DATA: vl_email_responsavel TYPE ad_smtpadr.
+
+    DATA: itl_body TYPE string_table.
+    REFRESH itl_body.
+
+    READ TABLE o_dao_job_fat->it_ztbabap0004 INTO DATA(wl_etapa) WITH KEY parametro = 'EMAIL_JOBS_ERROS' BINARY SEARCH.
+    IF sy-subrc EQ 0.
+      vl_email_responsavel = wl_etapa-valor.
+    ENDIF.
+
+    vl_id       = 'ST'.
+    vl_language = sy-langu.
+    vl_name     = 'ZFI_EMAIL_JOB_FATURAMENTO'.
+    vl_object   = 'TEXT'.
+
+    CALL FUNCTION 'READ_TEXT'
+      EXPORTING
+        id                      = vl_id
+        language                = vl_language
+        name                    = vl_name
+        object                  = vl_object
+      TABLES
+        lines                   = itl_lines
+      EXCEPTIONS
+        id                      = 1
+        language                = 2
+        name                    = 3
+        not_found               = 4
+        object                  = 5
+        reference_check         = 6
+        wrong_access_to_archive = 7
+        OTHERS                  = 8.
+
+    SORT o_dao_job_fat->it_ztbfi0011 BY status_job.
+
+    LOOP AT itl_lines INTO DATA(wl_line).
+      vl_line = wl_line-tdline.
+
+      IF vl_line CS '&'.
+        DATA(vl_data) = |{ sy-datum+6(2) }/{ sy-datum+4(2) }/{ sy-datum(4) }|.
+        REPLACE '&' WITH vl_data INTO vl_line.
+      ENDIF.
+
+      IF vl_line CS '*'.
+        READ TABLE o_dao_job_fat->it_ztbfi0011 INTO DATA(wl_0011) WITH KEY status_job = 'C' BINARY SEARCH.
+        IF sy-subrc NE 0.
+          READ TABLE o_dao_job_fat->it_ztbfi0011 INTO wl_0011 WITH KEY status_job = 'E' BINARY SEARCH.
+        ENDIF.
+        IF sy-subrc EQ 0.
+          LOOP AT o_dao_job_fat->it_ztbfi0011 ASSIGNING FIELD-SYMBOL(<fsl_0011>) FROM sy-tabix.
+            IF <fsl_0011>-status_job = 'C' OR <fsl_0011>-status_job = 'E'.
+              vl_line = <fsl_0011>-nome_job.
+              APPEND vl_line TO itl_body.
+              CLEAR vl_line.
+            ELSE.
+              CLEAR vl_line.
+              EXIT.
+            ENDIF.
+          ENDLOOP.
+        ENDIF.
+      ENDIF.
+
+      APPEND vl_line TO itl_body.
+    ENDLOOP.
+
+
+    o_dao_job_fat->m_envia_email( EXPORTING i_email_responsavel = vl_email_responsavel
+                                            t_email_body =  itl_body ).
+
+
+
+  ENDMETHOD.
