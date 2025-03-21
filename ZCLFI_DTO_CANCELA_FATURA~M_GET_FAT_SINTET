@@ -1,0 +1,3 @@
+  METHOD m_get_fat_sintet.
+    r_fat_sintet = o_dao_cancela_fatura->it_fatura_sintet.
+  ENDMETHOD.
