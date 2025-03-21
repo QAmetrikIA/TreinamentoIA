@@ -1,0 +1,13 @@
+  METHOD m_change_email_status.
+
+    CHECK check_zfi042_submit( ).
+
+    IF sy-batch = abap_true
+      OR sy-cprog = 'ZFIR039'.
+      m_submit_program_job( ).
+    ELSE.
+      m_submit_program( ).
+      m_update_email_status( ).
+    ENDIF.
+
+  ENDMETHOD.
