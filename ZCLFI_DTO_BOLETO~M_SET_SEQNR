@@ -1,0 +1,5 @@
+  METHOD m_set_seqnr.
+
+    o_dao->w_ztbint005-seqnr = i_seqnr.
+
+  ENDMETHOD.
