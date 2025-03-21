@@ -1,0 +1,3 @@
+  method M_GET_ALV_CANC.
+     r_alv = it_alv_canc.
+  endmethod.
