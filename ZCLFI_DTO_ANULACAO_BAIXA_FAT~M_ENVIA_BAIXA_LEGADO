@@ -1,0 +1,7 @@
+  METHOD m_envia_baixa_legado.
+    IF it_fi002_return[] IS NOT INITIAL.
+      o_dao_anulacao_baixa_fat->m_envia_dados_legado( EXPORTING i_commit = abap_false
+                                                       i_online = abap_true
+                                             CHANGING ch_fi002_return = it_fi002_return ). "On line
+    ENDIF.
+  ENDMETHOD.
