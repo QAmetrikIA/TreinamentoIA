@@ -1,0 +1,3 @@
+  method M_SELECT_WHOLE.
+    o_dao->m_select_whole( ).
+  endmethod.
