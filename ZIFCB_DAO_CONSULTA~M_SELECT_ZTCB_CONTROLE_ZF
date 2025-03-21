@@ -1,0 +1,24 @@
+METHOD zifcb_dao_consulta~m_select_ztcb_controle_zf.
+
+    DATA: itl_controle TYPE zttcb_controle_zf.
+
+    DATA: wal_estrutura_campos TYPE ztcb_controle_zf.
+
+    DATA: vl_campo TYPE string.
+
+    DATA(vl_ov) = o_model->m_get_ov( ).
+
+    vl_campo = zcl_abap_utility=>m_definir_campos( wal_estrutura_campos ).
+
+    CHECK vl_campo IS NOT INITIAL AND vl_ov IS NOT INITIAL.
+
+    SELECT (vl_campo)
+    FROM ztcb_controle_zf
+      INTO TABLE itl_controle
+      WHERE ord_zorb = vl_ov.
+
+    IF sy-subrc IS INITIAL.
+      o_model->m_set_controle_zfpr( itl_controle ).
+    ENDIF.
+
+  ENDMETHOD.
