@@ -1,0 +1,3 @@
+  method M_GET_FAT_ANALIT.
+    r_fat_analit = o_dao_cancela_fatura->it_fatura_analit.
+  endmethod.
