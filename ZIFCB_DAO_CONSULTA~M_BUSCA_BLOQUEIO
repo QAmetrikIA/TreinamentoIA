@@ -1,0 +1,15 @@
+  METHOD zifcb_dao_consulta~m_busca_bloqueio.
+
+    r_validacao = m_checa_ztcb_bloq_simult( ).
+
+  ENDMETHOD. 
+
+--
+
+ZIFCB_DAO_CONSULTA~M_BLOQ_OV_SIMULT
+
+  method ZIFCB_DAO_CONSULTA~M_BLOQ_OV_SIMULT.
+
+    r_validacao = m_modify_ztcb_bloq_simult( i_bloq_sim ).
+
+  endmethod.
