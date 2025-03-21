@@ -1,0 +1,3 @@
+  method M_SET_FATURA_SINT.
+    it_fatura_sint = i_fatura_sint.
+  endmethod.
