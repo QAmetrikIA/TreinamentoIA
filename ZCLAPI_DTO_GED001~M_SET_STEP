@@ -1,0 +1,3 @@
+  method M_SET_STEP.
+    o_dao_ged001->v_step = i_step.
+  endmethod.
