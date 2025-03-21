@@ -1,0 +1,40 @@
+  METHOD zifcb_dao_consulta~m_select_bseg_st_pago.
+
+    DATA itl_movimento_st TYPE zttbcb_movimento.
+    DATA: itl_bseg TYPE zttbcb_bseg.
+    DATA: wal_estrutura_campos TYPE zstbcb_bseg.
+    DATA: vl_campo TYPE string.
+
+    DATA(itl_movimento) = o_dao_movto->m_get_movimento_table( ).
+
+    LOOP AT itl_movimento INTO DATA(wal_movimento).
+      IF wal_movimento-cb_pedido_bloqueio CP 'ST*'.
+
+        APPEND wal_movimento TO itl_movimento_st.
+
+      ENDIF.
+    ENDLOOP.
+
+    vl_campo = zcl_abap_utility=>m_definir_campos( wal_estrutura_campos ).
+
+    CHECK vl_campo IS NOT INITIAL AND itl_movimento_st IS NOT INITIAL.
+
+    SELECT (vl_campo)
+           FROM bseg
+           INTO TABLE itl_bseg
+           FOR ALL ENTRIES IN itl_movimento
+           WHERE bukrs = itl_movimento-cb_empresa
+             AND belnr = itl_movimento-cb_doc_consumo
+             AND gjahr = itl_movimento-cb_ano_lancamento
+             AND augbl =  itl_movimento-cb_nf_serie(10)
+             AND augbl = ''
+             AND bschl <> '09'
+             AND kunnr = itl_movimento-cb_cliente.
+
+    IF sy-subrc IS INITIAL  .
+
+      o_model->m_set_bseg_st_pago( i_it_bseg =  itl_bseg ).
+
+    ENDIF.
+
+  ENDMETHOD. 
