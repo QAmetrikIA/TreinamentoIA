@@ -1,0 +1,20 @@
+  METHOD m_envia_legado.
+
+    CREATE OBJECT o_envia_legado.
+
+    CHECK it_zfit0046 IS NOT INITIAL AND it_zfit0038 IS NOT INITIAL.
+
+    o_envia_legado->m_set_zfit0046( it_zfit0046 ).
+    o_envia_legado->m_set_zfit0038( it_zfit0038 ).
+    o_envia_legado->m_set_dados_bol( it_dados_boleto ).
+    o_envia_legado->m_set_dados_bol_gerado( it_boleto_gerado ).
+    o_envia_legado->m_set_zfit0001( it_zfit0001 ).
+    o_envia_legado->m_set_order_id( it_order_id ).
+    o_envia_legado->m_set_base64( it_base64 ).
+    o_envia_legado->m_iniciar( CHANGING ch_log = it_log ).
+
+    it_zfit0001   = o_envia_legado->m_get_zfit0001( ).
+    it_compl_sint = o_envia_legado->m_get_dados_compl( ).
+    it_compl_anal = o_envia_legado->m_get_dados_anal( ).
+
+  ENDMETHOD.
