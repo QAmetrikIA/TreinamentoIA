@@ -1,0 +1,3 @@
+  method M_SET_FATURA_ANAL.
+    it_fatura_anal = i_fatura_anal.
+  endmethod.
