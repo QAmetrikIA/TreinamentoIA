@@ -1,0 +1,5 @@
+METHOD zifcb_dao_consulta~m_get_ztcb_bloq_simult.
+
+    r_ztcb_bloq_simult = wa_ztcb_bloq_simult.
+
+  ENDMETHOD.
