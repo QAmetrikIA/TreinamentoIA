@@ -1,0 +1,5 @@
+  METHOD M_ALTBLOQ_SIMULT.
+
+   r_validacao = o_dao_consulta->m_modify_ztcb_bloq_simult( i_bloq_sim ).
+
+  ENDMETHOD.
