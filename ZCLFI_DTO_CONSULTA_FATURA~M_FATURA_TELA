@@ -1,0 +1,50 @@
+  METHOD m_fatura_tela.
+    DATA: vl_doc_table   TYPE solix_tab,
+          vl_doc_created TYPE xfeld,
+          vl_doc_size    TYPE i,
+          vl_rawdata     TYPE mime_data.
+
+    DATA: itl_data    TYPE zttfi_excel_fatu_positions.
+    DATA: wl_data     TYPE zstfi_excel_fatu_positions.
+    DATA: vl_filename TYPE string.
+
+    DATA: itl_zfit0038 TYPE zttbfi_zfit0038.
+    DATA: ol_anexo TYPE REF TO zclfi_cria_anexo_faturamento.
+    CREATE OBJECT ol_anexo.
+
+
+    READ TABLE i_fatura_sint INTO DATA(wl_zfit0046) INDEX 1.
+    MOVE-CORRESPONDING  i_fatura_analit TO itl_zfit0038.
+
+
+    REFRESH itl_data.
+    LOOP AT i_fatura_analit INTO DATA(wl_zfit0038).
+      MOVE-CORRESPONDING wl_zfit0038 TO wl_data.
+      CONCATENATE wl_zfit0038-netdt+6(2) '/' wl_zfit0038-netdt+4(2) '/' wl_zfit0038-netdt(4) INTO
+      wl_data-netdt.
+      wl_data-valor          = wl_zfit0038-dmbtr.
+      wl_data-apolice        = wl_zfit0038-bstkd.
+      wl_data-cnpj_locatario = wl_zfit0038-cnpj_loc_tomador.
+      wl_data-loc_tomador    = wl_zfit0038-nome_loc_tomador.
+      wl_data-loc_segurado   = wl_zfit0038-nome_seg_ben.
+      APPEND wl_data TO itl_data.
+    ENDLOOP.
+
+    ol_anexo->m_set_excel_data( EXPORTING i_data = itl_data ).
+
+    ol_anexo->m_get_anexo(
+      EXPORTING
+        i_zfit0046        =  wl_zfit0046
+        i_zfit0038        =  itl_zfit0038
+      IMPORTING
+        e_doc_table    =  vl_doc_table              " GBT: SOLIX como categoria de tabela
+        e_doc_created  =  vl_doc_created             " Campo de seleção
+        e_doc_size     =  vl_doc_size
+        e_rawdata      =  vl_rawdata  ).
+
+    vl_filename = |{ 'Fatura' }{ wl_zfit0046-nrfatura }{ '.XLSX' }|.
+
+    o_dao_consulta_fatura->m_export_fatura( i_filename = vl_filename
+                                            i_rawdata  = vl_rawdata ).
+
+  ENDMETHOD.
