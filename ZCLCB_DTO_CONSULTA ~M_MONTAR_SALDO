@@ -1,0 +1,23 @@
+METHOD m_montar_saldo.
+
+    DATA ol_modelo TYPE REF TO zclcb_model_consulta.
+
+    DATA: itl_bsid TYPE zttbcb_bsid.
+
+    DATA: wal_bsid TYPE zstbcb_bsid.
+
+    ol_modelo = o_dao_consulta->m_get_model( ).
+
+    itl_bsid = ol_modelo->m_get_bsid( ).
+
+    CHECK itl_bsid IS NOT INITIAL.
+
+    LOOP AT itl_bsid INTO wal_bsid.
+
+      v_saldo = wal_bsid-dmbtr + v_saldo.
+
+    ENDLOOP.
+
+    r_retorno = abap_true.
+
+  ENDMETHOD.
