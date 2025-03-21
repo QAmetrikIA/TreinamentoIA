@@ -1,0 +1,3 @@
+  METHOD constructor.
+    o_dao_ged001 = NEW #( ).
+  ENDMETHOD.
