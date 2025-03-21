@@ -1,0 +1,3 @@
+  method M_GET_ALV_EMISSAO.
+    r_alv = it_alv_emiss.
+  endmethod.
