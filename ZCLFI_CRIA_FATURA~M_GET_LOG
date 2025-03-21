@@ -1,0 +1,3 @@
+  METHOD M_GET_LOG.
+    r_log = it_log.
+  ENDMETHOD.
