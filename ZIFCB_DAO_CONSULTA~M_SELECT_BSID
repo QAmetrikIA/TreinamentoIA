@@ -1,0 +1,114 @@
+  METHOD zifcb_dao_consulta~m_select_bsid.
+
+    DATA: wal_estrutura_campos TYPE zstbcb_bsid.
+
+    DATA: vl_campo  TYPE string.
+
+    DATA: itl_bsid TYPE zttbcb_bsid.
+
+    DATA(itl_bseg)   = o_model->m_get_bseg( ).
+
+    DATA(vl_empresa) = o_model->m_get_empresa( ).
+
+    DATA(vl_cliente) = o_model->m_get_cliente( ).
+
+    DATA(rl_cliente) = o_model->m_get_cliente_sede( ).
+
+    DATA(rl_periodo) = o_model->m_get_periodo( ).
+
+    vl_campo = zcl_abap_utility=>m_definir_campos( wal_estrutura_campos ).
+
+    CHECK vl_campo IS NOT INITIAL.
+
+    IF rl_cliente IS NOT INITIAL.
+
+      IF i_bsid IS INITIAL.
+
+        SELECT (vl_campo)
+        FROM bsid
+        INTO TABLE itl_bsid
+        WHERE bukrs = vl_empresa
+        AND   kunnr IN rl_cliente
+        AND   budat IN rl_periodo
+        AND   zlspr = space
+        AND   blart = 'CB'.
+
+        IF v_app_extrato IS NOT INITIAL AND itl_bsid IS NOT INITIAL.
+
+          SELECT (vl_campo)
+          FROM bsid
+          INTO TABLE itl_bsid
+          FOR ALL ENTRIES IN itl_bsid
+          WHERE bukrs = vl_empresa
+          AND kunnr = itl_bsid-kunnr
+          AND belnr = itl_bsid-belnr
+          AND zlspr = space
+          AND blart = 'CB'.
+
+        ENDIF.
+
+        o_model->m_set_bsid( itl_bsid ).
+
+      ELSE.
+
+        SELECT (vl_campo)
+        FROM bsid
+        INTO TABLE itl_bsid
+        WHERE bukrs = vl_empresa
+        AND   kunnr IN rl_cliente
+        AND   budat IN rl_periodo
+        AND   zlspr = space
+        AND   blart = 'CB'.
+
+        o_model->m_set_bsid( itl_bsid ).
+
+      ENDIF.
+
+    ELSE.
+
+      IF i_bsid IS INITIAL.
+
+        SELECT (vl_campo)
+        FROM bsid
+        INTO TABLE itl_bsid
+        WHERE bukrs = vl_empresa
+        AND   kunnr = vl_cliente
+        AND   zlspr = space
+        AND   blart = 'CB'.
+
+        IF v_app_extrato IS NOT INITIAL AND itl_bsid IS NOT INITIAL.
+
+          SELECT (vl_campo)
+          FROM bsid
+          INTO TABLE itl_bsid
+          FOR ALL ENTRIES IN itl_bsid
+          WHERE bukrs = vl_empresa
+          AND kunnr = itl_bsid-kunnr
+          AND belnr = itl_bsid-belnr
+          AND zlspr = space
+          AND blart = 'CB'.
+
+        ENDIF.
+
+        o_model->m_set_bsid( itl_bsid ).
+
+      ELSE.
+
+        SELECT (vl_campo)
+        FROM bsid
+        INTO TABLE itl_bsid
+        WHERE bukrs = vl_empresa
+        AND   kunnr = vl_cliente
+        AND   budat IN rl_periodo
+        AND   zlspr = space
+        AND   blart = 'CB'.
+
+        o_model->m_set_bsid( itl_bsid ).
+
+      ENDIF.
+
+    ENDIF.
+
+    r_retorno = abap_true.
+
+  ENDMETHOD.
