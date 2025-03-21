@@ -1,0 +1,3 @@
+  METHOD m_set_empresa.
+    o_dao_job_fat->v_empresa = i_empresa.
+  ENDMETHOD.
