@@ -1,0 +1,5 @@
+METHOD m_consultar_movimento.
+
+  r_return = o_dao_movto->m_buscar_movimento( i_single ).
+
+  ENDMETHOD.
