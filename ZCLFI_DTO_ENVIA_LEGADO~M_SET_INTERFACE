@@ -1,0 +1,5 @@
+  method M_SET_INTERFACE.
+
+    o_envia_legado->v_interface = i_interface.
+
+  endmethod.
