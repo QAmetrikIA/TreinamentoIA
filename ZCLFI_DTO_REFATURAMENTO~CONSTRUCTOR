@@ -1,0 +1,7 @@
+  METHOD constructor.
+    IF i_dao_refaturamento IS INITIAL.
+      CREATE OBJECT o_dao_refaturamento TYPE zclfi_dao_refaturamento.
+    ELSE.
+      o_dao_refaturamento = i_dao_refaturamento.
+    ENDIF.
+  ENDMETHOD.
