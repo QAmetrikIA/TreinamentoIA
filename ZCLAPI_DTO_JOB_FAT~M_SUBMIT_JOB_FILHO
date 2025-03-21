@@ -1,0 +1,19 @@
+  METHOD m_submit_job_filho.
+    DATA: vl_jobname  TYPE tbtcjob-jobname.
+    SHIFT o_dao_job_fat->v_ramo LEFT DELETING LEADING '0'.
+    DATA(vl_pagador) = i_pagador.
+    SHIFT vl_pagador LEFT DELETING LEADING '0'.
+
+    vl_jobname = |ZFI039_{ o_dao_job_fat->v_ramo }_{ vl_pagador }|.
+
+    o_dao_job_fat->m_job_open( EXPORTING i_jobname = vl_jobname
+                               IMPORTING e_jobcount = DATA(vl_jobcount) ).
+
+    o_dao_job_fat->m_job_submit( EXPORTING i_jobname  = vl_jobname
+                                           i_jobcount = vl_jobcount
+                                           i_pagador  = i_pagador ).
+
+    o_dao_job_fat->m_job_close( EXPORTING i_jobname  = vl_jobname
+                                          i_jobcount = vl_jobcount ).
+
+  ENDMETHOD.
