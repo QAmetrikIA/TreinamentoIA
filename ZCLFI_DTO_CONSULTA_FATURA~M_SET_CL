@@ -1,0 +1,3 @@
+  METHOD m_set_cl.
+    o_dao_consulta_fatura->v_cl = i_cl.
+  ENDMETHOD.
