@@ -1,0 +1,5 @@
+  METHOD m_set_dtinc.
+
+    o_dao->w_ztbint005-dtinc = i_dtinc.
+
+  ENDMETHOD.
